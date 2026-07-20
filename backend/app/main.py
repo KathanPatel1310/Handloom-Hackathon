@@ -221,19 +221,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# --- Serve Frontend (for Docker single-container deployment) ---
-FRONTEND_DIST = ROOT_DIR / "frontend_dist"
-if FRONTEND_DIST.exists():
-    # Mount Vite static assets
-    app.mount("/assets", StaticFiles(directory=FRONTEND_DIST / "assets"), name="assets")
-    app.mount("/vite.svg", StaticFiles(directory=FRONTEND_DIST, html=False), name="vite_svg")
-    
-    @app.get("/")
-    @app.get("/{catchall:path}")
-    def serve_react_app(catchall: str = ""):
-        if catchall.startswith("api/"):
-            raise HTTPException(status_code=404, detail="API route not found")
-        return FileResponse(FRONTEND_DIST / "index.html")
+
 
 
 class WeaverProfile(BaseModel):
@@ -2023,3 +2011,17 @@ def weaver_budget_plan(payload: BudgetPlanRequest) -> dict[str, Any]:
 @app.get("/api/admin/explainability")
 def admin_explainability(product_category: str = Query(...)) -> dict[str, Any]:
     return {"product_category": product_category, "feature_groups": _feature_importance(product_category)}
+
+# --- Serve Frontend (for Docker single-container deployment) ---
+FRONTEND_DIST = ROOT_DIR / "frontend_dist"
+if FRONTEND_DIST.exists():
+    # Mount Vite static assets
+    app.mount("/assets", StaticFiles(directory=FRONTEND_DIST / "assets"), name="assets")
+    app.mount("/vite.svg", StaticFiles(directory=FRONTEND_DIST, html=False), name="vite_svg")
+    
+    @app.get("/")
+    @app.get("/{catchall:path}")
+    def serve_react_app(catchall: str = ""):
+        if catchall.startswith("api/"):
+            raise HTTPException(status_code=404, detail="API route not found")
+        return FileResponse(FRONTEND_DIST / "index.html")
