@@ -13,7 +13,7 @@ import {
   YAxis,
 } from "recharts";
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000";
+const API_BASE = "http://127.0.0.1:9999";
 const NAV_ITEMS = ["home", "assistant", "forecast", "orders", "profile"];
 
 const TEXT = {
@@ -1506,7 +1506,126 @@ function OrdersScreen({ detail, profile }) {
   );
 }
 
-function ProfileScreen({ cluster, profile, setProfile, onClusterChange, onProductChange, onPrint, onAdmin }) {
+// ─── My Earnings Card (Profile screen) ──────────────────────────────────────
+function MyEarningsCard({ historyData, profile }) {
+  if (!historyData) return null;
+
+  const current = historyData.current_month_revenue_inr || 0;
+  const prev = historyData.prev_month_revenue_inr || 0;
+  const avg3 = historyData.recent3_avg_monthly_inr || current;
+  const benchmark = historyData.benchmark_monthly_inr || 7000;
+  const withAI = historyData.with_ai_monthly_inr || avg3;
+  const improvPct = historyData.income_improvement_pct || 0;
+  const state = historyData.state || "";
+
+  // Month-on-month change
+  const momChange = prev > 0 ? ((current - prev) / prev) * 100 : 0;
+  const momArrow = momChange >= 0 ? "▲" : "▼";
+  const momColor = momChange >= 0 ? "#2e7d32" : "#B3462C";
+
+  // vs state benchmark
+  const vsBenchmark = benchmark > 0 ? ((avg3 - benchmark) / benchmark) * 100 : 0;
+  const benchmarkLabel = vsBenchmark >= 5 ? "Above average" : vsBenchmark <= -5 ? "Below average" : "Near average";
+  const benchmarkColor = vsBenchmark >= 5 ? "#2e7d32" : vsBenchmark <= -15 ? "#B3462C" : "#b97a2a";
+
+  // AI improvement sign
+  const aiArrow = improvPct >= 0 ? "▲" : "▼";
+  const aiColor = improvPct >= 0 ? "#2e7d32" : "#B3462C";
+
+  return (
+    <section className="card-surface my-earnings-card">
+      <div className="my-earnings-header">
+        <div>
+          <p className="eyebrow">💼 My Earnings</p>
+          <h3>{profile.name || "Your"} monthly income</h3>
+          <p className="subtle-copy" style={{ fontSize: "0.8rem" }}>
+            Your share of cluster orders · divided by weavers in your cluster
+          </p>
+        </div>
+      </div>
+
+      {/* Big current month number */}
+      <div className="earnings-hero">
+        <div className="earnings-main-number">
+          <span className="earnings-label">This month</span>
+          <strong className="earnings-value">{fmtCurrency(current)}</strong>
+          <span className="earnings-mom" style={{ color: momColor }}>
+            {momArrow} {Math.abs(momChange).toFixed(1)}% vs last month
+          </span>
+        </div>
+        <div className="earnings-avg-number">
+          <span className="earnings-label">3-month average</span>
+          <strong>{fmtCurrency(avg3)}</strong>
+        </div>
+      </div>
+
+      {/* Comparison row */}
+      <div className="earnings-compare-row">
+        <div className="earnings-compare-block">
+          <span>Your avg (3 months)</span>
+          <strong>{fmtCurrency(avg3)}</strong>
+        </div>
+        <div className="earnings-compare-divider">vs</div>
+        <div className="earnings-compare-block">
+          <span>{state || "State"} avg weaver</span>
+          <strong>{fmtCurrency(benchmark)}</strong>
+          <small style={{ color: benchmarkColor, fontWeight: 600 }}>{benchmarkLabel}</small>
+        </div>
+      </div>
+
+      {/* Progress bar: your avg vs benchmark */}
+      <div className="earnings-progress-wrap">
+        <div className="earnings-progress-track">
+          <div
+            className="earnings-progress-fill"
+            style={{
+              width: `${Math.min(100, (avg3 / Math.max(benchmark, withAI)) * 100).toFixed(0)}%`,
+              background: vsBenchmark >= 0 ? "#26415E" : "#B3462C",
+            }}
+          />
+          <div
+            className="earnings-progress-marker"
+            style={{ left: `${Math.min(100, (benchmark / Math.max(benchmark, withAI)) * 100).toFixed(0)}%` }}
+            title={`${state} avg: ${fmtCurrency(benchmark)}`}
+          />
+          <div
+            className="earnings-progress-marker ai"
+            style={{ left: `${Math.min(100, (withAI / Math.max(benchmark, withAI)) * 100).toFixed(0)}%` }}
+            title={`With AI plan: ${fmtCurrency(withAI)}`}
+          />
+        </div>
+        <div className="earnings-progress-legend">
+          <span><span className="legend-dot you" /> You (avg)</span>
+          <span><span className="legend-dot bench" /> State avg</span>
+          <span><span className="legend-dot ai" /> With AI plan</span>
+        </div>
+      </div>
+
+      {/* AI uplift box */}
+      <div className="earnings-ai-uplift">
+        <div className="ai-uplift-left">
+          <p className="eyebrow" style={{ marginBottom: 4 }}>🤖 With AI recommendations</p>
+          <strong className="ai-income-value">{fmtCurrency(withAI)}/month</strong>
+          <p className="subtle-copy" style={{ fontSize: "0.8rem", marginTop: 2 }}>
+            Based on following this week's plan (+15% on your 3-month average)
+          </p>
+        </div>
+        <div className="ai-uplift-badge" style={{ color: aiColor }}>
+          <span>{aiArrow} {Math.abs(improvPct).toFixed(1)}%</span>
+          <small>vs your earlier pace</small>
+        </div>
+      </div>
+
+      {/* Source note */}
+      <p className="earnings-source-note">
+        State benchmark from NCAER/The Hindu 2024 handloom income study.
+        AI projection = your 3-month average × 1.15 (conservative 15% uplift from demand-timed production).
+      </p>
+    </section>
+  );
+}
+
+function ProfileScreen({ cluster, profile, setProfile, onClusterChange, onProductChange, onPrint, onAdmin, historyData }) {
   const t = TEXT[profile.language];
   const productOptions = cluster?.available_products || (cluster?.product_specialty ? [cluster.product_specialty] : []);
 
@@ -1596,6 +1715,7 @@ function ProfileScreen({ cluster, profile, setProfile, onClusterChange, onProduc
         </label>
       </div>
 
+      <MyEarningsCard historyData={historyData} profile={profile} />
       <PrintableCard brief={cluster?.weaver_brief} cluster={cluster} profile={profile} t={t} />
     </section>
   );
@@ -2015,6 +2135,7 @@ export default function Phase2App() {
               cluster={selectedCluster}
               profile={profile}
               setProfile={setProfile}
+              historyData={historyData}
               onClusterChange={(clusterId) => {
                 setSelectedClusterId(clusterId);
                 setSelectedProduct("");

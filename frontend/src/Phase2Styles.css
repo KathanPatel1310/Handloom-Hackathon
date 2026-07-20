@@ -1146,3 +1146,246 @@ button {
     grid-template-columns: 1fr;
   }
 }
+
+/* ─── My Earnings Card (Profile) ─────────────────────────────────────────── */
+.my-earnings-card {
+  padding: 20px;
+  display: grid;
+  gap: 20px;
+}
+
+.my-earnings-header h3 {
+  margin: 4px 0 0;
+  font-family: "Fraunces", serif;
+}
+
+.earnings-hero {
+  display: flex;
+  gap: 24px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+
+.earnings-main-number {
+  display: grid;
+  gap: 4px;
+  flex: 1 1 160px;
+}
+
+.earnings-avg-number {
+  display: grid;
+  gap: 4px;
+  padding: 12px 16px;
+  border-radius: 14px;
+  background: rgba(38, 65, 94, 0.06);
+  border: 1px solid rgba(38, 65, 94, 0.12);
+  flex: 0 0 auto;
+}
+
+.earnings-avg-number span {
+  font-size: 0.78rem;
+  color: var(--color-ink-600);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.earnings-avg-number strong {
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+
+.earnings-label {
+  font-size: 0.78rem;
+  color: var(--color-ink-600);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.earnings-value {
+  font-family: "Fraunces", serif;
+  font-size: clamp(1.8rem, 4vw, 2.6rem);
+  line-height: 1.1;
+  color: var(--color-ink-900);
+}
+
+.earnings-mom {
+  font-size: 0.88rem;
+  font-weight: 800;
+}
+
+/* Compare row */
+.earnings-compare-row {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: rgba(247, 234, 209, 0.5);
+  border: 1px solid rgba(217, 164, 65, 0.18);
+  flex-wrap: wrap;
+}
+
+.earnings-compare-block {
+  display: grid;
+  gap: 3px;
+  flex: 1 1 120px;
+}
+
+.earnings-compare-block span {
+  font-size: 0.78rem;
+  color: var(--color-ink-600);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.earnings-compare-block strong {
+  font-size: 1.1rem;
+  font-family: "Fraunces", serif;
+}
+
+.earnings-compare-block small {
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.earnings-compare-divider {
+  font-size: 0.88rem;
+  color: var(--color-ink-600);
+  font-weight: 700;
+  flex: 0 0 auto;
+}
+
+/* Progress bar */
+.earnings-progress-wrap {
+  display: grid;
+  gap: 10px;
+}
+
+.earnings-progress-track {
+  position: relative;
+  height: 12px;
+  border-radius: 999px;
+  background: rgba(92, 83, 71, 0.12);
+  overflow: visible;
+}
+
+.earnings-progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.5s ease;
+}
+
+.earnings-progress-marker {
+  position: absolute;
+  top: -4px;
+  width: 3px;
+  height: 20px;
+  background: var(--color-turmeric-500);
+  border-radius: 999px;
+  transform: translateX(-50%);
+}
+
+.earnings-progress-marker.ai {
+  background: var(--color-leaf-600);
+}
+
+.earnings-progress-legend {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.earnings-progress-legend span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  color: var(--color-ink-600);
+  font-weight: 700;
+}
+
+.legend-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+}
+
+.legend-dot.you {
+  background: var(--color-indigo-700);
+}
+
+.legend-dot.bench {
+  background: var(--color-turmeric-500);
+}
+
+.legend-dot.ai {
+  background: var(--color-leaf-600);
+}
+
+/* AI uplift box */
+.earnings-ai-uplift {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 16px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(92, 122, 82, 0.08), rgba(38, 65, 94, 0.06));
+  border: 1px solid rgba(92, 122, 82, 0.22);
+  flex-wrap: wrap;
+}
+
+.ai-uplift-left {
+  display: grid;
+  gap: 4px;
+  flex: 1 1 160px;
+}
+
+.ai-income-value {
+  font-family: "Fraunces", serif;
+  font-size: 1.5rem;
+  color: var(--color-leaf-600);
+}
+
+.ai-uplift-badge {
+  display: grid;
+  gap: 2px;
+  text-align: right;
+  flex: 0 0 auto;
+}
+
+.ai-uplift-badge span {
+  font-size: 1.4rem;
+  font-weight: 800;
+}
+
+.ai-uplift-badge small {
+  font-size: 0.75rem;
+  color: var(--color-ink-600);
+}
+
+/* Source note */
+.earnings-source-note {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--color-ink-600);
+  line-height: 1.6;
+  font-style: italic;
+}
+
+@media (max-width: 540px) {
+  .earnings-hero {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .earnings-avg-number {
+    flex: 1 1 auto;
+  }
+  .earnings-compare-row {
+    flex-direction: column;
+  }
+}
