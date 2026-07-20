@@ -1,0 +1,51 @@
+{
+  "split": {
+    "train_end": "2025-06-23T00:00:00",
+    "valid_end": "2025-12-22T00:00:00",
+    "test_end": "2026-06-22T00:00:00"
+  },
+  "products": {
+    "dupatta": {
+      "baseline_weight": 0.41671858298909625,
+      "xgb_weight": 0.5832814170109037,
+      "validation_wape_baseline": 0.35715269172518244,
+      "validation_wape_xgb": 0.2551635613031665,
+      "conformal_q90": 4.639304407612318
+    },
+    "home_furnishing": {
+      "baseline_weight": 0.4242396824576018,
+      "xgb_weight": 0.5757603175423982,
+      "validation_wape_baseline": 0.4144539828309044,
+      "validation_wape_xgb": 0.3053837173426311,
+      "conformal_q90": 4.0362498325004825
+    },
+    "saree": {
+      "baseline_weight": 0.42375034112541576,
+      "xgb_weight": 0.5762496588745842,
+      "validation_wape_baseline": 0.24664378722115676,
+      "validation_wape_xgb": 0.1813717151269959,
+      "conformal_q90": 9.452534550783426
+    },
+    "shawl_wrap": {
+      "baseline_weight": 0.4133017687092787,
+      "xgb_weight": 0.5866982312907213,
+      "validation_wape_baseline": 0.3587426326129666,
+      "validation_wape_xgb": 0.25271759255891074,
+      "conformal_q90": 5.159473697678848
+    },
+    "stole": {
+      "baseline_weight": 0.4206333805825977,
+      "xgb_weight": 0.5793666194174023,
+      "validation_wape_baseline": 0.461338141025641,
+      "validation_wape_xgb": 0.33494201313572913,
+      "conformal_q90": 4.503803724723394
+    },
+    "yardage_fabric": {
+      "baseline_weight": 0.3935727260060622,
+      "xgb_weight": 0.6064272739939378,
+      "validation_wape_baseline": 0.24086950651454803,
+      "validation_wape_xgb": 0.15632487580301888,
+      "conformal_q90": 5.5222414891042
+    }
+  }
+}

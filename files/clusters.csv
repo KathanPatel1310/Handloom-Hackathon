@@ -1,0 +1,35 @@
+cluster_id,cluster_name,state,product_specialty,primary_material,weaver_count_est,avg_price_per_unit_inr
+C01,Patan Patola,Gujarat,saree,silk,800,45000
+C02,Surendranagar Tangaliya,Gujarat,shawl_wrap,wool,1200,4500
+C03,Kutch Weaves (Bhujodi),Gujarat,shawl_wrap,wool/cotton,2500,3200
+C04,Ahmedabad Ashavali,Gujarat,saree,silk,400,38000
+C05,Surat Mashru,Gujarat,yardage_fabric,silk-cotton,900,1200
+C06,Varanasi Banarasi,Uttar Pradesh,saree,silk,45000,8500
+C07,Mubarakpur Azamgarh,Uttar Pradesh,saree,silk,15000,6000
+C08,Shantipur-Fulia Tant,West Bengal,saree,cotton,30000,2200
+C09,Murshidabad Silk,West Bengal,saree,silk,12000,7000
+C10,Bishnupur Baluchari,West Bengal,saree,silk,3000,12000
+C11,Nadia Jamdani,West Bengal,saree,cotton,8000,9500
+C12,Sambalpur Ikat,Odisha,saree,cotton/silk,20000,5000
+C13,Berhampur Patta,Odisha,saree,silk,6000,8000
+C14,Nuapatna Sonepuri,Odisha,saree,cotton,4000,4200
+C15,Pochampally Ikat,Telangana,saree,cotton/silk,25000,4800
+C16,Gadwal,Telangana,saree,silk-cotton,8000,6500
+C17,Venkatagiri,Andhra Pradesh,saree,cotton/silk,7000,4000
+C18,Mangalagiri,Andhra Pradesh,saree,cotton,5000,2500
+C19,Kanchipuram Kanjeevaram,Tamil Nadu,saree,silk,35000,15000
+C20,Arani Silk,Tamil Nadu,saree,silk,5000,7000
+C21,Salem,Tamil Nadu,yardage_fabric,cotton,6000,900
+C22,Ilkal,Karnataka,saree,cotton/silk,10000,3800
+C23,Molakalmuru,Karnataka,saree,silk,3000,9000
+C24,Guledgudda Khana,Karnataka,dupatta,cotton,2000,1500
+C25,Sualkuchi Muga Silk,Assam,saree,silk,22000,12000
+C26,Barpeta,Assam,yardage_fabric,cotton,5000,1100
+C27,Chanderi,Madhya Pradesh,saree,cotton-silk,4000,5500
+C28,Maheshwar,Madhya Pradesh,saree,cotton-silk,3500,5000
+C29,Paithan Paithani,Maharashtra,saree,silk,2500,20000
+C30,Solapur,Maharashtra,home_furnishing,cotton,15000,1800
+C31,Kota Doria,Rajasthan,saree,cotton-silk,4000,4200
+C32,Balaramapuram,Kerala,saree,cotton,3000,3200
+C33,Srinagar Pashmina,Jammu & Kashmir,shawl_wrap,wool,6000,25000
+C34,Bhagalpur Tussar,Bihar,saree,silk,18000,6000
