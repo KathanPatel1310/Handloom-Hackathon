@@ -23,6 +23,8 @@ from pipeline_common import (
     load_orders,
     read_json,
 )
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 
 
 app = FastAPI(
@@ -218,6 +220,20 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# --- Serve Frontend (for Docker single-container deployment) ---
+FRONTEND_DIST = ROOT_DIR / "frontend_dist"
+if FRONTEND_DIST.exists():
+    # Mount Vite static assets
+    app.mount("/assets", StaticFiles(directory=FRONTEND_DIST / "assets"), name="assets")
+    app.mount("/vite.svg", StaticFiles(directory=FRONTEND_DIST, html=False), name="vite_svg")
+    
+    @app.get("/")
+    @app.get("/{catchall:path}")
+    def serve_react_app(catchall: str = ""):
+        if catchall.startswith("api/"):
+            raise HTTPException(status_code=404, detail="API route not found")
+        return FileResponse(FRONTEND_DIST / "index.html")
 
 
 class WeaverProfile(BaseModel):
