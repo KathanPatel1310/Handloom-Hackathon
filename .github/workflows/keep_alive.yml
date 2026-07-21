@@ -1,0 +1,23 @@
+name: Keep Render Alive
+
+on:
+  schedule:
+    # Runs every 5 minutes, 24/7, completely free using GitHub Actions
+    - cron: "*/5 * * * *"
+  workflow_dispatch: # Also lets you trigger it manually from GitHub UI
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Render App
+        run: |
+          echo "Pinging https://handloom-ai-app.onrender.com/ at $(date)"
+          STATUS=$(curl -o /dev/null -s -w "%{http_code}" --max-time 30 https://handloom-ai-app.onrender.com/)
+          echo "HTTP Status: $STATUS"
+          if [ "$STATUS" -ge 200 ] && [ "$STATUS" -lt 500 ]; then
+            echo "✅ App is alive!"
+          else
+            echo "❌ App returned status $STATUS"
+            exit 1
+          fi
