@@ -138,7 +138,6 @@ button {
 
 .top-controls,
 .mode-switch,
-.bottom-nav,
 .chip-row,
 .language-row,
 .onboarding-actions,
@@ -147,6 +146,13 @@ button {
   display: flex;
   gap: 12px;
   flex-wrap: wrap;
+}
+
+/* bottom-nav stays in ONE row always — no wrapping */
+.bottom-nav {
+  display: flex;
+  gap: 6px;
+  flex-wrap: nowrap;
 }
 
 .language-pill,
@@ -418,6 +424,12 @@ button {
 .nav-button {
   flex: 1 1 0;
   min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: center;
+  padding: 10px 6px;
+  font-size: 0.78rem;
 }
 
 .field {
@@ -567,7 +579,14 @@ button {
   }
 
   .bottom-nav {
-    gap: 8px;
+    gap: 4px;
+    padding: 8px;
+  }
+
+  .nav-button {
+    font-size: 0.68rem;
+    padding: 8px 4px;
+    min-height: 40px;
   }
 }
 

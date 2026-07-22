@@ -122,11 +122,44 @@ body {
 
 .mode-switch,
 .action-row,
-.quick-chip-row,
-.bottom-nav {
+.quick-chip-row {
   display: flex;
   gap: 12px;
   flex-wrap: wrap;
+}
+
+.bottom-nav {
+  display: flex;
+  gap: 6px;
+  flex-wrap: nowrap;
+}
+
+.nav-pill {
+  flex: 1 1 0;
+  min-width: 0;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.55);
+  color: var(--ink);
+  border-radius: 999px;
+  padding: 10px 6px;
+  font-family: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: background 0.18s, color 0.18s;
+}
+
+.nav-pill.active {
+  background: var(--indigo);
+  color: white;
+}
+
+.nav-pill:hover:not(.active) {
+  background: rgba(255, 255, 255, 0.9);
 }
 
 .tab,
@@ -401,7 +434,13 @@ select,
   }
 
   .bottom-nav {
-    justify-content: flex-start;
+    gap: 4px;
+    padding: 8px;
+  }
+
+  .nav-pill {
+    font-size: 0.68rem;
+    padding: 8px 4px;
   }
 }
 
