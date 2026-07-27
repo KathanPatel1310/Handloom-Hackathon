@@ -1,0 +1,56 @@
+name: Keep Render Alive
+
+on:
+  schedule:
+    # Every 5 minutes — GitHub may delay this by 10-30min during peak load.
+    # To compensate, each run pings every 60s for 5 rounds (covers the full 5-min window).
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Continuous Heartbeat Ping (5 rounds × 60s)
+        run: |
+          URL="https://handloom-ai-app.onrender.com/"
+          ROUNDS=5
+          SLEEP_BETWEEN=60   # seconds between pings
+
+          for i in $(seq 1 $ROUNDS); do
+            echo ""
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo "🔔 Round $i / $ROUNDS  —  $(date)"
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+            # Generous timeout for cold-start; retry on transient failure
+            STATUS=$(curl -o /dev/null -s -w "%{http_code}" \
+              --max-time 90 \
+              --connect-timeout 15 \
+              --retry 2 \
+              --retry-delay 5 \
+              --retry-max-time 60 \
+              "$URL")
+
+            echo "   HTTP Status → $STATUS"
+
+            if [ "$STATUS" -ge 200 ] && [ "$STATUS" -lt 300 ]; then
+              echo "   ✅ App is alive and healthy!"
+            elif [ "$STATUS" -ge 300 ] && [ "$STATUS" -lt 500 ]; then
+              echo "   ⚠️  $STATUS — Server is responding, ping served its purpose."
+            elif [ "$STATUS" -eq 000 ]; then
+              echo "   ❌ curl returned 000 — network/timeout failure on round $i."
+              # Don't exit — keep trying the remaining rounds
+            else
+              echo "   ⚠️  $STATUS — Server error / still warming up. App should recover."
+            fi
+
+            # Sleep between rounds (skip sleep after the last round)
+            if [ "$i" -lt "$ROUNDS" ]; then
+              echo "   ⏱  Sleeping ${SLEEP_BETWEEN}s before next ping..."
+              sleep $SLEEP_BETWEEN
+            fi
+          done
+
+          echo ""
+          echo "🏁 All $ROUNDS rounds complete. App has been kept warm for ~$((ROUNDS * SLEEP_BETWEEN / 60)) minutes."

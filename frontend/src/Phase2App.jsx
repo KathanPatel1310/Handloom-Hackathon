@@ -13,7 +13,7 @@ import {
   YAxis,
 } from "recharts";
 
-const API_BASE = "http://127.0.0.1:9999";
+const API_BASE = import.meta.env.VITE_API_BASE_URL !== undefined ? import.meta.env.VITE_API_BASE_URL : "http://127.0.0.1:8000";
 const NAV_ITEMS = ["home", "assistant", "forecast", "orders", "profile"];
 
 const TEXT = {
@@ -1965,6 +1965,9 @@ export default function Phase2App() {
   }
 
   async function sendAssistantMessage(messageText = assistantInput) {
+    if (typeof messageText !== "string") {
+      messageText = assistantInput;
+    }
     const trimmed = messageText.trim();
     if (!trimmed) return;
     setAssistantMessages((current) => [...current, { role: "user", text: trimmed }]);
