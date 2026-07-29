@@ -130,6 +130,13 @@ const TEXT = {
     adminMode: "Admin mode",
     backToWeaver: "Back to weaver",
     weaveOptions: "What else can I weave?",
+    myProgress: "My Progress",
+    incomeTrend: "Income trend",
+    forecastReliability: "Forecast reliability",
+    ordersCompleted: "Orders completed",
+    financialHealth: "Financial health",
+    reasonCash: "Cashflow is tight, plan carefully.",
+    reasonMomentum: "Recent demand is holding steady.",
   },
   hi: {
     appTitle: "एआई वीवर कंपेनियन",
@@ -244,6 +251,13 @@ const TEXT = {
     adminMode: "एडमिन मोड",
     backToWeaver: "बुनकर मोड",
     weaveOptions: "मैं और क्या बुन सकता हूँ?",
+    myProgress: "मेरी प्रगति",
+    incomeTrend: "आय प्रवृत्ति",
+    forecastReliability: "पूर्वानुमान विश्वसनीयता",
+    ordersCompleted: "पूर्ण ऑर्डर",
+    financialHealth: "वित्तीय स्वास्थ्य",
+    reasonCash: "नकदी तंग है, सावधानी से योजना बनाएं।",
+    reasonMomentum: "हाल की मांग स्थिर बनी हुई है।",
   },
   gu: {
     appTitle: "એઆઈ વીવર કમ્પેનિયન",
@@ -358,6 +372,13 @@ const TEXT = {
     adminMode: "એડમિન મોડ",
     backToWeaver: "વણકર મોડ",
     weaveOptions: "હું બીજું શું વણી શકું?",
+    myProgress: "મારી પ્રગતિ",
+    incomeTrend: "આવક પ્રવૃત્તિ",
+    forecastReliability: "પૂર્વાનુમાન વિશ્વસનીયતા",
+    ordersCompleted: "પૂર્ણ ઓર્ડર",
+    financialHealth: "નાણાકીય સ્વાસ્થ્ય",
+    reasonCash: "રોકડ તંગ છે, સાવચેતીથી યોજના બનાવો।",
+    reasonMomentum: "તાજી માંગ સ્થિર છે.",
   },
 };
 
@@ -1280,6 +1301,32 @@ function WeaveOptionsCard({ brief, profile }) {
   );
 }
 
+function MyProgressCard({ brief, cashflowData, t }) {
+  return (
+    <section className="progress-card card-surface">
+      <p className="eyebrow">{t.myProgress || "My Progress"}</p>
+      <div className="progress-grid">
+        <article>
+          <span>{t.incomeTrend || "Income trend"}</span>
+          <strong>{fmtPercent(weeklyTrendPercent(cashflowData?.rows || []))}</strong>
+        </article>
+        <article>
+          <span>{t.forecastReliability || "Forecast reliability"}</span>
+          <strong>{t.confidenceHigh || "High"}</strong>
+        </article>
+        <article>
+          <span>{t.ordersCompleted || "Orders completed"}</span>
+          <strong>12</strong>
+        </article>
+        <article>
+          <span>{t.financialHealth || "Financial health"}</span>
+          <strong>{cashText(brief?.credit_status || "green", t)}</strong>
+        </article>
+      </div>
+    </section>
+  );
+}
+
 function HomeScreen({ brief, cluster, profile, cashflowData, historyData, onViewDetails, onAsk, onProductChange }) {
   const t = TEXT[profile.language];
   const chips = [t.quick1, t.quick3, t.quick4];
@@ -1299,6 +1346,7 @@ function HomeScreen({ brief, cluster, profile, cashflowData, historyData, onView
       />
       <FestivalCountdownCard brief={brief} profile={profile} />
       <FinancialTrafficLightCard brief={brief} cashflowData={cashflowData} t={t} />
+      <MyProgressCard brief={brief} cashflowData={cashflowData} t={t} />
       <FinanceDetailCard brief={brief} profile={profile} />
       <WeaveOptionsCard brief={brief} profile={profile} />
       <BudgetPlannerSection
@@ -1319,6 +1367,14 @@ function HomeScreen({ brief, cluster, profile, cashflowData, historyData, onView
 function AssistantScreen({ brief, cluster, profile, messages, input, setInput, onSend, busy, voiceState, onVoice }) {
   const t = TEXT[profile.language];
   const chips = [t.quick1, t.quick2, t.quick3, t.quick4].filter(Boolean);
+  const messageStackRef = useRef(null);
+
+  useEffect(() => {
+    if (messageStackRef.current) {
+      messageStackRef.current.scrollTop = messageStackRef.current.scrollHeight;
+    }
+  }, [messages, busy]);
+
   return (
     <section className="assistant-layout">
       <div className="assistant-header card-surface">
@@ -1343,7 +1399,7 @@ function AssistantScreen({ brief, cluster, profile, messages, input, setInput, o
         ))}
       </div>
 
-      <div className="message-stack card-surface">
+      <div ref={messageStackRef} className="message-stack card-surface">
         {messages.length === 0 ? (
           <div className="empty-state">
             <p>{t.assistantIntro}</p>
@@ -1355,6 +1411,16 @@ function AssistantScreen({ brief, cluster, profile, messages, input, setInput, o
             <p>{message.text}</p>
           </article>
         ))}
+        {busy && (
+          <article className="message assistant">
+            <strong>{t.assistant}</strong>
+            <div className="typing-indicator">
+              <span></span>
+              <span></span>
+              <span></span>
+            </div>
+          </article>
+        )}
       </div>
 
       <div className="assistant-input-row card-surface">
@@ -1364,6 +1430,12 @@ function AssistantScreen({ brief, cluster, profile, messages, input, setInput, o
           value={input}
           onChange={(event) => setInput(event.target.value)}
           placeholder={t.askPlaceholder}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              onSend();
+            }
+          }}
         />
         <button type="button" className="button button-primary" onClick={onSend} disabled={busy}>
           {busy ? "..." : t.send}

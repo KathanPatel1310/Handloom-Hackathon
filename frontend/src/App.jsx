@@ -12,9 +12,19 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import HisabApp from "./HisabApp";
+import "./HisabStyles.css";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL !== undefined ? import.meta.env.VITE_API_BASE_URL : "http://127.0.0.1:8000";
-const NAV_ITEMS = ["home", "assistant", "forecast", "orders", "profile"];
+const NAV_ITEMS = [
+  { id: "home", label: "Overview" },
+  { id: "forecast", label: "Demand Forecast" },
+  { id: "finance", label: "Finance & Cashflow" },
+  { id: "production", label: "Production Planner" },
+  { id: "orders", label: "Order History" },
+  { id: "analytics", label: "Cluster Analytics" },
+  { id: "hisab", label: "My Hisab" },
+];
 
 const TEXT = {
   en: {
@@ -323,10 +333,13 @@ function mapLanguageToSpeech(language) {
 }
 
 function screenLabel(screen, t) {
-  if (screen === "assistant") return t.assistant;
-  if (screen === "forecast") return t.forecast;
+  if (screen === "overview") return "Overview";
+  if (screen === "demand") return "Demand Forecast";
+  if (screen === "finance") return "Finance & Cashflow";
+  if (screen === "production") return "Production Planner";
   if (screen === "orders") return t.orders;
-  if (screen === "profile") return t.profile;
+  if (screen === "analytics") return "Cluster Analytics";
+  if (screen === "hisab") return t.hisab || "My Hisab";
   return t.home;
 }
 
@@ -378,11 +391,11 @@ function BottomNav({ activeScreen, onChange, t }) {
     <nav className="bottom-nav" aria-label="Primary navigation">
       {NAV_ITEMS.map((item) => (
         <button
-          key={item}
-          className={activeScreen === item ? "nav-pill active" : "nav-pill"}
-          onClick={() => onChange(item)}
+          key={item.id}
+          className={activeScreen === item.id ? "nav-pill active" : "nav-pill"}
+          onClick={() => onChange(item.id)}
         >
-          {screenLabel(item, t)}
+          {item.label}
         </button>
       ))}
     </nav>
@@ -540,51 +553,8 @@ function HeroActionCard({ brief, cluster, profile, onViewDetails }) {
   );
 }
 
-function statusLabel(status, t) {
-  if (status === "tight") return t.cashRisk;
-  if (status === "watch") return t.cashCaution;
-  return t.cashHealthy;
-}
-
 function HomeScreen({ brief, cluster, profile, onViewDetails }) {
   const t = TEXT[profile.language];
-  const finance = brief?.finance_summary || {};
-  const [customQty, setCustomQty] = useState(brief?.recommended_units || 1);
-  const [customPrice, setCustomPrice] = useState("");
-  const [customMisc, setCustomMisc] = useState("");
-  const [customFinance, setCustomFinance] = useState(null);
-
-  useEffect(() => {
-    setCustomQty(brief?.recommended_units || 1);
-    setCustomFinance(null);
-  }, [brief?.recommended_units, brief?.product_specialty, cluster?.cluster_id]);
-
-  useEffect(() => {
-    let cancelled = false;
-    async function calculateCustomFinance() {
-      if (!cluster?.cluster_id || !brief?.product_specialty || !customQty) return;
-      try {
-        const payload = {
-          cluster_id: cluster.cluster_id,
-          product_category: brief.product_specialty,
-          quantity: Number(customQty),
-          unit_price_inr: customPrice ? Number(customPrice) : null,
-          misc_cost_inr: customMisc ? Number(customMisc) : null,
-          language: profile.language,
-          weaver_name: profile.name || t.fallbackName,
-        };
-        const result = await postJson("/api/weaver/finance", payload);
-        if (!cancelled) setCustomFinance(result.finance_summary);
-      } catch {
-        if (!cancelled) setCustomFinance(null);
-      }
-    }
-    calculateCustomFinance();
-    return () => {
-      cancelled = true;
-    };
-  }, [cluster?.cluster_id, brief?.product_specialty, customQty, customPrice, customMisc, profile.language, profile.name]);
-
   return (
     <div className="screen-shell">
       <HeroActionCard
@@ -594,29 +564,19 @@ function HomeScreen({ brief, cluster, profile, onViewDetails }) {
         onViewDetails={onViewDetails}
       />
       <section className="summary-grid">
-        <div className="card money-card">
-          <p className="eyebrow">This Week Money Plan</p>
-          <h3>
-            If you weave {fmtNumber(finance.recommended_units || brief?.recommended_units)}{" "}
-            {translateCategory(brief?.product_specialty, profile.language)}
-          </h3>
-          <p>{finance.plain_advice || actionText(brief?.credit_status, t)}</p>
+        <div className="card">
+          <p className="eyebrow">{t.currentCash}</p>
+          <h3>{cashText(brief?.credit_status, t)}</h3>
+          <p>{actionText(brief?.credit_status, t)}</p>
           <div className="mini-stats">
             <div>
-              <span>You may earn</span>
-              <strong>{fmtCurrency(finance.gross_revenue_inr)}</strong>
+              <span>{t.currentCash}</span>
+              <strong>{fmtCurrency(brief?.projected_net_cashflow_inr)}</strong>
             </div>
             <div>
-              <span>Costs</span>
-              <strong>{fmtCurrency(finance.total_cost_inr)}</strong>
+              <span>Cash In</span>
+              <strong>{fmtCurrency(brief?.projected_cash_in_inr)}</strong>
             </div>
-            <div>
-              <span>Money left</span>
-              <strong>{fmtCurrency(finance.net_profit_inr)}</strong>
-            </div>
-          </div>
-          <div className={`status-pill ${finance.cash_status === "tight" ? "red" : finance.cash_status === "watch" ? "yellow" : "green"}`}>
-            {statusLabel(finance.cash_status, t)}
           </div>
         </div>
         <div className="card">
@@ -640,55 +600,34 @@ function HomeScreen({ brief, cluster, profile, onViewDetails }) {
 
       <section className="summary-grid">
         <div className="card">
-          <p className="eyebrow">Cost Breakdown</p>
-          <h3>Money left = selling value - total cost</h3>
+          <p className="eyebrow">{t.estimatedRevenue}</p>
+          <h3>{fmtCurrency(brief?.estimated_revenue_inr)}</h3>
           <div className="mini-stats">
             <div>
               <span>{t.rawCost}</span>
-              <strong>{fmtCurrency(finance.raw_material_cost_inr)}</strong>
+              <strong>{fmtCurrency(brief?.estimated_raw_material_cost_inr)}</strong>
             </div>
             <div>
               <span>{t.wageCost}</span>
-              <strong>{fmtCurrency(finance.wage_cost_inr)}</strong>
+              <strong>{fmtCurrency(brief?.estimated_wage_cost_inr)}</strong>
+            </div>
+          </div>
+        </div>
+        <div className="card">
+          <p className="eyebrow">{t.estimatedProfit}</p>
+          <h3>{fmtCurrency(brief?.estimated_profit_inr)}</h3>
+          <p>{translateCategory(brief?.product_specialty, profile.language)}</p>
+          <div className="mini-stats">
+            <div>
+              <span>{t.currentWeek}</span>
+              <strong>{formatDate(brief?.week_start_date, profile.language)}</strong>
             </div>
             <div>
-              <span>Loom + misc.</span>
-              <strong>{fmtCurrency((finance.maintenance_cost_inr || 0) + (finance.misc_cost_inr || 0))}</strong>
+              <span>{t.expectedWindow}</span>
+              <strong>{formatDate(brief?.expected_sell_start, profile.language)}</strong>
             </div>
           </div>
         </div>
-        <div className="card calculator-card">
-          <p className="eyebrow">Try Your Own Quantity</p>
-          <h3>What if I weave a different number?</h3>
-          <div className="calculator-grid">
-            <label className="field">
-              <span>Quantity</span>
-              <input className="text-input" type="number" min="1" value={customQty} onChange={(event) => setCustomQty(event.target.value)} />
-            </label>
-            <label className="field">
-              <span>Price per piece</span>
-              <input className="text-input" type="number" min="1" placeholder={fmtNumber(finance.unit_price_inr)} value={customPrice} onChange={(event) => setCustomPrice(event.target.value)} />
-            </label>
-            <label className="field">
-              <span>Misc. cost</span>
-              <input className="text-input" type="number" min="0" placeholder={fmtNumber(finance.misc_cost_inr)} value={customMisc} onChange={(event) => setCustomMisc(event.target.value)} />
-            </label>
-          </div>
-          <p>
-            For {fmtNumber(customQty)} pieces, keep around {fmtCurrency(customFinance?.total_cost_inr)} ready.
-            Expected money left is {fmtCurrency(customFinance?.net_profit_inr)}.
-          </p>
-        </div>
-      </section>
-
-      <section className="card">
-        <p className="eyebrow">Maximize Earnings</p>
-        <h3>Small steps for this week</h3>
-        <ul className="simple-list">
-          {(finance.maximize_income_tips || []).map((tip) => (
-            <li key={tip}>{tip}</li>
-          ))}
-        </ul>
       </section>
 
       <section className="card">
@@ -697,10 +636,7 @@ function HomeScreen({ brief, cluster, profile, onViewDetails }) {
         <div className="options-grid">
           {(brief?.weave_options || []).map((option) => (
             <article key={option.product_category} className="option-card">
-              <span>
-                {translateCategory(option.product_category, profile.language)}
-                {option.best_choice ? " | Best choice this week" : ""}
-              </span>
+              <span>{translateCategory(option.product_category, profile.language)}</span>
               <strong>
                 {fmtNumber(option.recommended_units)} {t.units}
               </strong>
@@ -721,10 +657,6 @@ function HomeScreen({ brief, cluster, profile, onViewDetails }) {
                   <span>{t.estimatedProfit}</span>
                   <strong>{fmtCurrency(option.estimated_profit_inr)}</strong>
                 </div>
-                <div>
-                  <span>Total cost</span>
-                  <strong>{fmtCurrency(option.estimated_total_cost_inr)}</strong>
-                </div>
               </div>
             </article>
           ))}
@@ -738,7 +670,6 @@ function AssistantScreen({
   brief,
   cluster,
   profile,
-  assistantStatus,
   messages,
   input,
   setInput,
@@ -760,11 +691,6 @@ function AssistantScreen({
         </div>
 
         <p className="assistant-intro">{t.assistantIntro}</p>
-        <div className={assistantStatus?.gemini_configured ? "helper-chip green" : "helper-chip yellow"}>
-          {assistantStatus?.gemini_configured
-            ? "Gemini connected. Fallback still protects finance answers."
-            : "Gemini key not detected. Simple local answers are active."}
-        </div>
 
         <div className="assistant-context">
           <strong>
@@ -1105,7 +1031,6 @@ export default function App() {
   const [clusterDetail, setClusterDetail] = useState(null);
   const [forecastData, setForecastData] = useState(null);
   const [cashflowData, setCashflowData] = useState(null);
-  const [assistantStatus, setAssistantStatus] = useState(null);
   const [metrics, setMetrics] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -1134,9 +1059,6 @@ export default function App() {
         ]);
         setClusters(clusterPayload);
         setMetrics(metricPayload);
-        getJson("/api/assistant/status")
-          .then(setAssistantStatus)
-          .catch(() => setAssistantStatus({ gemini_configured: false }));
         if (clusterPayload.length > 0) {
           setSelectedClusterId(clusterPayload[0].cluster_id);
         }
@@ -1210,7 +1132,6 @@ export default function App() {
         question: trimmed,
         language: profile.language,
         weaver_name: profile.name || TEXT[profile.language].fallbackName,
-        product_category: selectedProduct || selectedCluster?.product_specialty,
       });
       setAssistantMessages((current) => [
         ...current,
@@ -1257,6 +1178,17 @@ export default function App() {
 
   const t = TEXT[profile.language];
   const brief = clusterDetail?.weaver_brief;
+  
+  // Add hisab translations
+  useEffect(() => {
+    if (profile.language === "hi") {
+      TEXT.hi.hisab = "मेरा हिसाब";
+    } else if (profile.language === "gu") {
+      TEXT.gu.hisab = "મારો હિસાબ";
+    } else {
+      TEXT.en.hisab = "My Hisab";
+    }
+  }, [profile.language]);
 
   if (loading) {
     return (
@@ -1314,7 +1246,6 @@ export default function App() {
               brief={brief}
               cluster={selectedCluster}
               profile={profile}
-              assistantStatus={assistantStatus}
               messages={assistantMessages}
               input={assistantInput}
               setInput={setAssistantInput}
@@ -1358,6 +1289,10 @@ export default function App() {
               profile={profile}
               onViewDetails={() => setActiveScreen("forecast")}
             />
+          ) : null}
+
+          {activeScreen === "hisab" ? (
+            <HisabApp profile={profile} cluster={selectedCluster} />
           ) : null}
 
           <BottomNav activeScreen={activeScreen} onChange={setActiveScreen} t={t} />

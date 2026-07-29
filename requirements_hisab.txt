@@ -1,0 +1,4 @@
+# Additional dependencies for Hisab feature
+sqlalchemy==2.0.36
+pydantic-settings==2.6.1
+python-multipart==0.0.18

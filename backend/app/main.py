@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-import re
 import os
 from collections import defaultdict
 from functools import lru_cache
@@ -33,7 +32,7 @@ app = FastAPI(
     description="Personalised recommendation backend for the Handloom AI Weaver Companion.",
 )
 
-TODAY = pd.Timestamp("2026-07-20")
+TODAY = pd.Timestamp("2026-07-18")
 GEMINI_ENDPOINT = (
     "https://generativelanguage.googleapis.com/v1beta/models/"
     "gemini-2.5-flash:generateContent"
@@ -208,14 +207,13 @@ origins = [
     origin.strip()
     for origin in os.getenv(
         "FRONTEND_ORIGINS",
-        "http://localhost:5173,http://127.0.0.1:5173,http://localhost:5174,http://127.0.0.1:5174,http://localhost:5175,http://127.0.0.1:5175,http://localhost:5176,http://127.0.0.1:5176,http://localhost:5177,http://127.0.0.1:5177,https://example.vercel.app",
+        "http://localhost:5173,http://127.0.0.1:5173,http://localhost:5175,http://127.0.0.1:5175,http://localhost:3456,http://127.0.0.1:3456,http://localhost:3457,http://127.0.0.1:3457,http://localhost:3458,http://127.0.0.1:3458,https://example.vercel.app",
     ).split(",")
     if origin.strip()
 ]
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
-    allow_origin_regex=r"^http://(localhost|127\.0\.0\.1):\d+$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -247,34 +245,6 @@ class AssistantRequest(BaseModel):
     weaver_name: str = "Rameshbhai"
     product_category: str | None = None
     gemini_api_key: str | None = None
-
-
-class FinanceRequest(BaseModel):
-    profile: WeaverProfile | None = None
-    cluster_id: str | None = None
-    product_category: str | None = None
-    quantity: float = Field(gt=0, le=500)
-    unit_price_inr: float | None = Field(default=None, gt=0)
-    misc_cost_inr: float | None = Field(default=None, ge=0)
-    language: str = "gu"
-    weaver_name: str = "Rameshbhai"
-
-
-def _env_value(name: str) -> str:
-    value = os.getenv(name, "").strip()
-    if value:
-        return value
-    env_path = ROOT_DIR / "backend" / ".env"
-    if not env_path.exists():
-        return ""
-    for line in env_path.read_text(encoding="utf-8").splitlines():
-        stripped = line.strip()
-        if not stripped or stripped.startswith("#") or "=" not in stripped:
-            continue
-        key, raw_value = stripped.split("=", 1)
-        if key.strip() == name:
-            return raw_value.strip().strip('"').strip("'")
-    return ""
 
 
 def _require_artifact(path: Path) -> Path:
@@ -501,125 +471,6 @@ def _payment_window(cluster_id: str, sell_start: pd.Timestamp) -> tuple[str, str
     return start.strftime("%Y-%m-%d"), end.strftime("%Y-%m-%d")
 
 
-def _money(value: float) -> str:
-    return f"Rs {round(value):,}"
-
-
-def _unit_price_for_product(
-    cluster_id: str,
-    product_category: str,
-    fallback_price: float | None = None,
-) -> float:
-    orders = artifact_bundle()["orders"]
-    rows = orders.loc[
-        (orders["cluster_id"] == cluster_id)
-        & (orders["product_category"] == product_category)
-        & (orders["unit_price_inr"] > 0)
-    ].copy()
-    if not rows.empty:
-        recent = rows.sort_values("order_date").tail(40)
-        return float(recent["unit_price_inr"].median())
-    if fallback_price and fallback_price > 0:
-        return float(fallback_price)
-    future = _future_rows_for_cluster(cluster_id)
-    product_rows = future.loc[future["product_category"] == product_category]
-    if not product_rows.empty:
-        return float(product_rows["avg_order_value_inr"].median())
-    return 0.0
-
-
-def _cost_ratios(cluster_id: str) -> dict[str, float]:
-    cash_rows = _cashflow_rows_for_cluster(cluster_id)
-    current_cash = _current_week_row(cash_rows)
-    # The cashflow projection stores cluster-level totals (all active weavers combined).
-    # Divide every cost and revenue figure by active_weavers_est to get per-weaver ratios
-    # so that a single-loom weaver gets realistic margins instead of inflated costs.
-    active_weavers = max(float(current_cash.get("active_weavers_est", 1.0)), 1.0)
-    forecast_revenue = max(float(current_cash["forecast_revenue_inr"]) / active_weavers, 1.0)
-    raw_ratio = (float(current_cash["raw_material_cost_inr"]) / active_weavers) / forecast_revenue
-    wage_ratio = (float(current_cash["wage_cost_inr"]) / active_weavers) / forecast_revenue
-    maintenance_ratio = (float(current_cash["loom_maintenance_cost_inr"]) / active_weavers) / forecast_revenue
-    drag_ratio = (float(current_cash.get("working_capital_drag_inr", 0.0)) / active_weavers) / forecast_revenue
-    return {
-        "raw": max(0.05, min(raw_ratio, 0.55)),
-        "wage": max(0.05, min(wage_ratio, 0.50)),
-        "maintenance": max(0.003, min(maintenance_ratio, 0.08)),
-        "drag": max(0.0, min(drag_ratio, 0.08)),
-        "credit_status": str(current_cash["credit_status"]),
-    }
-
-
-def _finance_summary(
-    *,
-    profile: WeaverProfile,
-    product_category: str,
-    quantity: float,
-    fallback_unit_price: float | None = None,
-    unit_price_override: float | None = None,
-    misc_cost_override: float | None = None,
-    display_product: str | None = None,
-    demand_band: str = "Medium",
-) -> dict[str, Any]:
-    ratios = _cost_ratios(profile.cluster_id)
-    unit_price = float(unit_price_override or _unit_price_for_product(
-        profile.cluster_id,
-        product_category,
-        fallback_unit_price,
-    ))
-    gross_revenue = quantity * unit_price
-    raw_material_cost = gross_revenue * ratios["raw"]
-    wage_cost = gross_revenue * ratios["wage"]
-    maintenance_cost = gross_revenue * ratios["maintenance"]
-    working_capital_drag = gross_revenue * ratios["drag"]
-    misc_cost = float(misc_cost_override) if misc_cost_override is not None else gross_revenue * 0.05
-    total_cost = raw_material_cost + wage_cost + maintenance_cost + working_capital_drag + misc_cost
-    net_profit = gross_revenue - total_cost
-    profit_per_unit = net_profit / quantity if quantity else 0.0
-    margin_pct = (net_profit / gross_revenue * 100.0) if gross_revenue else 0.0
-
-    if net_profit <= 0 or margin_pct < 10 or ratios["credit_status"] == "red":
-        cash_status = "tight"
-        plain_advice = "Keep this order small or confirm advance payment before buying material."
-    elif margin_pct < 22 or ratios["credit_status"] == "yellow":
-        cash_status = "watch"
-        plain_advice = "This can work, but keep material purchase tight and follow up on payment dates."
-    else:
-        cash_status = "healthy"
-        plain_advice = "This plan leaves useful money after costs. Keep quality high and avoid extra unsold stock."
-
-    tips = [
-        f"For {quantity:.0f} {display_product or product_category}, keep about {_money(total_cost)} ready for costs.",
-        f"Every extra piece adds about {_money(profit_per_unit)} after material, wages, and small expenses.",
-    ]
-    if "high" in demand_band.lower():
-        tips.append("Demand is strong, so finish confirmed work first and ask buyers for an advance on larger orders.")
-    else:
-        tips.append("Demand is steady, so stay close to the recommended quantity and avoid overproduction.")
-    if ratios["raw"] >= 0.28:
-        tips.append("Raw material is a large part of cost this week; compare supplier rates before buying.")
-    else:
-        tips.append("Raw material cost is manageable this week; buying only what the plan needs should be enough.")
-
-    return {
-        "recommended_units": round(quantity, 2),
-        "unit_price_inr": round(unit_price, 2),
-        "gross_revenue_inr": round(gross_revenue, 2),
-        "raw_material_cost_inr": round(raw_material_cost, 2),
-        "wage_cost_inr": round(wage_cost, 2),
-        "maintenance_cost_inr": round(maintenance_cost, 2),
-        "working_capital_drag_inr": round(working_capital_drag, 2),
-        "misc_cost_inr": round(misc_cost, 2),
-        "total_cost_inr": round(total_cost, 2),
-        "net_profit_inr": round(net_profit, 2),
-        "profit_per_unit_inr": round(profit_per_unit, 2),
-        "profit_margin_pct": round(margin_pct, 1),
-        "cash_status": cash_status,
-        "credit_status": ratios["credit_status"],
-        "plain_advice": plain_advice,
-        "maximize_income_tips": tips,
-    }
-
-
 def _impact_statement(avg_output: float, recommended_mid: float) -> str:
     change_pct = 0.0 if avg_output <= 0 else (recommended_mid / avg_output - 1.0) * 100
     if change_pct >= 4:
@@ -716,23 +567,6 @@ def _why_bullets(
 def _fallback_assistant(question: str, package: dict[str, Any]) -> str:
     q = question.lower()
     primary_material = str(package["primary_material"]).lower()
-    finance = package.get("finance_summary", {})
-    if q.strip() in {"hi", "hello", "hey", "namaste", "kem cho", "kaise ho"} or "hello" in q or "namaste" in q:
-        return (
-            f"Namaste {package.get('profile_name') or 'friend'}. I can help with what to weave, "
-            "material buying, payment timing, and profit for this week. Ask me like: "
-            f"'If I weave {finance.get('recommended_units', package['recommended_min_units'])} pieces, how much money is left?'"
-        )
-    if "profit" in q or "earn" in q or "money" in q or "rupee" in q or "income" in q:
-        return (
-            f"For this week's plan, selling value is about {_money(finance.get('gross_revenue_inr', package['estimated_revenue_inr']))}. "
-            f"Costs are about {_money(finance.get('total_cost_inr', package['estimated_direct_cost_inr']))}. "
-            f"Money left after costs is about {_money(finance.get('net_profit_inr', package['estimated_profit_inr']))}. "
-            f"Action: {finance.get('plain_advice') or package['action_line']}"
-        )
-    if "more" in q or "maximize" in q or "increase" in q:
-        tips = finance.get("maximize_income_tips") or [package["action_line"]]
-        return " ".join(tips[:3])
     if "cotton" in q and "cotton" not in primary_material:
         return (
             f"You mainly work with {package['primary_material_label']}, not cotton. "
@@ -756,11 +590,11 @@ def _fallback_assistant(question: str, package: dict[str, Any]) -> str:
             f"{package['recommended_range_label']}."
         )
     if "what if" in q and "10" in q and ("price" in q or "cost" in q):
-        current_cost = finance.get("total_cost_inr", package["estimated_direct_cost_inr"])
+        current_cost = package["estimated_direct_cost_inr"]
         higher_cost = current_cost * 1.10
         return (
             f"If raw-material price rises by 10%, your direct production cost would move from "
-            f"{_money(current_cost)} to about {_money(higher_cost)}. Action: buy early if you can."
+            f"₹{current_cost:,.0f} to about ₹{higher_cost:,.0f}. Action: buy early if you can."
         )
     if "plan" in q or "week" in q:
         monday = package["weekly_plan"][0]
@@ -821,52 +655,6 @@ def _default_profile(
     )
 
 
-
-def _parse_range(range_str: str) -> tuple[int, int]:
-    """Robustly parse a range like '5-6' or '5\u20136' into (low, high).
-    Handles all dash variants including mojibake bytes."""
-    s = str(range_str)
-    # Replace all Unicode dash variants with plain hyphen
-    for ch in [u'\u2013', u'\u2014', u'\u2012', u'\u2010', u'\u00ad']:
-        s = s.replace(ch, '-')
-    # Replace common mojibake sequences for en-dash
-    for bad in ['\xe2\x80\x93', u'\u00e2\u20ac\u201c', 'â€"']:
-        s = s.replace(bad, '-')
-    parts = re.split(r'[-]+', s)
-    parts = [p.strip() for p in parts if p.strip().isdigit()]
-    if len(parts) >= 2:
-        return int(parts[0]), int(parts[-1])
-    if len(parts) == 1:
-        v = int(parts[0])
-        return v, v
-    return 0, 0
-
-
-def _parse_weave_option(option: dict[str, Any], index: int) -> dict[str, Any]:
-    """Convert a weave_option dict into the brief weave_options format."""
-    low, high = _parse_range(option["recommended_range"])
-    mid = (low + high + 1) // 2
-    return {
-        "product_key": option["product_key"],
-        "product_category": option.get(
-            "product_category",
-            PRODUCT_CATALOG[option["product_key"]]["model_category"],
-        ),
-        "display_name": option["display_name"],
-        "recommended_units": mid,
-        "recommended_range": option["recommended_range"],
-        "forecast_lower": low,
-        "forecast_upper": high,
-        "estimated_revenue_inr": option.get("estimated_revenue_inr"),
-        "estimated_raw_material_cost_inr": option.get("estimated_raw_material_cost_inr"),
-        "estimated_total_cost_inr": option.get("estimated_total_cost_inr"),
-        "estimated_profit_inr": option.get("estimated_profit_inr", 0),
-        "profit_per_unit_inr": option.get("profit_per_unit_inr", 0),
-        "cash_status": option.get("cash_status", "healthy"),
-        "best_choice": index == 0,
-    }
-
-
 def _package_to_weaver_brief(package: dict[str, Any], cluster: dict[str, Any]) -> dict[str, Any]:
     demand_band = str(package.get("demand_band", "Medium")).lower()
     if "high" in demand_band:
@@ -915,7 +703,6 @@ def _package_to_weaver_brief(package: dict[str, Any], cluster: dict[str, Any]) -
         round((package["recommended_min_units"] + package["recommended_max_units"]) / 2)
     )
     product_cfg = PRODUCT_CATALOG[package["primary_product_key"]]
-    finance = package.get("finance_summary", {})
 
     return {
         "week_start_date": package["last_updated"],
@@ -936,21 +723,28 @@ def _package_to_weaver_brief(package: dict[str, Any], cluster: dict[str, Any]) -
         "action_line": package["action_line"],
         "purchase_advice": package.get("purchase_advice"),
         "loan_advice": package.get("loan_advice"),
-        "finance_summary": finance,
-        "estimated_revenue_inr": finance.get("gross_revenue_inr", package.get("estimated_revenue_inr")),
-        "estimated_raw_material_cost_inr": finance.get("raw_material_cost_inr", package.get("estimated_raw_material_cost_inr")),
-        "estimated_wage_cost_inr": finance.get("wage_cost_inr", package.get("estimated_wage_cost_inr")),
-        "estimated_maintenance_cost_inr": finance.get("maintenance_cost_inr", 0),
-        "estimated_misc_cost_inr": finance.get("misc_cost_inr", 0),
-        "estimated_total_cost_inr": finance.get("total_cost_inr", package.get("estimated_direct_cost_inr")),
-        "estimated_profit_inr": finance.get("net_profit_inr", package.get("estimated_profit_inr")),
-        "profit_per_unit_inr": finance.get("profit_per_unit_inr", 0),
-        "cash_status": finance.get("cash_status", "healthy"),
-        "plain_finance_advice": finance.get("plain_advice", ""),
-        "maximize_income_tips": finance.get("maximize_income_tips", []),
+        "finance_summary": package.get("finance_summary"),
+        "projected_net_cashflow_inr": round(float(current_cash["projected_net_cashflow_inr"]), 2),
+        "projected_cash_in_inr": round(float(current_cash["projected_cash_in_inr"]), 2),
         "weave_options": [
-            _parse_weave_option(option, index)
-            for index, option in enumerate(package.get("weave_options", []))
+            {
+                "product_key": option["product_key"],
+                "display_name": option["display_name"],
+                "recommended_units": int(
+                    round(
+                        (
+                            int(str(option["recommended_range"]).split("–")[0])
+                            + int(str(option["recommended_range"]).split("–")[-1])
+                        )
+                        / 2
+                    )
+                ),
+                "recommended_range": option["recommended_range"],
+                "estimated_revenue_inr": option["estimated_revenue_inr"],
+                "estimated_profit_inr": option["estimated_profit_inr"],
+                "cash_status": "healthy" if str(current_cash["credit_status"]) == "green" else "watch" if str(current_cash["credit_status"]) == "yellow" else "at risk",
+            }
+            for option in package.get("weave_options", [])
         ],
     }
 
@@ -1006,18 +800,24 @@ def _call_gemini(
     profile: WeaverProfile,
     gemini_api_key: str | None = None,
 ) -> dict[str, Any]:
-    api_key = (gemini_api_key or _env_value("GEMINI_API_KEY")).strip()
+    api_key = (gemini_api_key or os.getenv("GEMINI_API_KEY", "")).strip()
     if not api_key:
         fallback = _fallback_assistant(question, package)
         return {"available": False, "reply": fallback, "source": "fallback"}
 
     system_instruction = (
-        "You are a trusted AI weaving companion for Indian handloom weavers. "
-        "You do not forecast demand yourself. You only explain the provided recommendation package. "
-        "For money questions, use finance_summary only and explain gross revenue minus costs as money left. "
-        "You may answer normal greetings and casual conversation naturally. "
-        "Never invent numbers, festivals, dates, or market locations beyond the given context. "
-        "Answer in simple language and end with a practical action."
+        "You are 'SAATHI', a warm, expert AI weaving companion for Indian handloom weavers. "
+        "Your goal is to provide supportive, practical, and highly specific advice. "
+        "Talk like a local expert who understands the weaver's life in India (specifically Gujarat/cluster location). "
+        "Use gentle, respectful language (e.g., using 'Bhai' or 'Ji' where culturally appropriate).\n\n"
+        "HYBRID INTELLIGENCE GUIDELINES:\n"
+        "1. BUSINESS/ML QUESTIONS: If the user asks about their income, demand, production plan, cashflow, or recommendations, "
+        "use the provided 'recommendation_package' JSON. This is LIVE DATA from our ML pipeline. Always refer to these specific numbers.\n"
+        "2. GENERAL/LOCAL QUESTIONS: If the user asks general questions (where to buy yarn, how to fix a loom, local markets like Vastral, etc.), "
+        "provide detailed, conversational, and comprehensive answers using your native knowledge. Don't be too brief; explain things clearly.\n"
+        "3. MULTILINGUAL: Answer perfectly in the requested language (Hindi, Gujarati, or English).\n"
+        "4. PRACTICALITY: Always end with a clear 'Action Step' for the weaver.\n"
+        "5. NO HALLUCINATION: If asked about specific business data NOT in the JSON, explain you don't have that live data yet but provide general guidance based on their cluster's specialty."
     )
     language_name = LANGUAGE_NAMES.get(language, "English")
     context = {
@@ -1035,14 +835,19 @@ def _call_gemini(
                 "parts": [
                     {
                         "text": (
-                            f"Answer in {language_name}. Use only this JSON context and do not add unsupported claims.\n"
-                            f"{json.dumps(context, ensure_ascii=False)}"
+                            f"Context for the conversation:\n"
+                            f"Language: {language_name}\n"
+                            f"Today's Date: {TODAY.strftime('%Y-%m-%d')}\n"
+                            f"User Profile: {json.dumps(profile.model_dump(), ensure_ascii=False)}\n"
+                            f"Live ML Recommendation: {json.dumps(package, ensure_ascii=False)}\n\n"
+                            f"User's Question: {question}\n\n"
+                            f"Please provide a natural, helpful response in {language_name}."
                         )
                     }
                 ],
             }
         ],
-        "generationConfig": {"temperature": 0.35, "maxOutputTokens": 320},
+        "generationConfig": {"temperature": 0.45, "maxOutputTokens": 1024},
         "store": False,
     }
     req = request.Request(
@@ -1142,32 +947,27 @@ def build_recommendation_package(profile: WeaverProfile) -> dict[str, Any]:
     display_product = _cluster_product_label(cluster, profile.primary_product_key)
     material_label = _material_label(cluster)
 
-    demand_band = "Medium"
-    if total_multiplier >= 1.25:
-        demand_band = "High"
-    elif total_multiplier >= 1.15:
-        demand_band = "Medium-High"
-    elif total_multiplier <= 0.92:
-        demand_band = "Cautious"
-
-    avg_unit_value = _unit_price_for_product(
-        profile.cluster_id,
-        model_category,
-        float(current_row["avg_order_value_inr"]),
+    avg_unit_value = float(current_row["avg_order_value_inr"])
+    direct_cost_ratio = (
+        float(current_cash["raw_material_cost_inr"])
+        + float(current_cash["wage_cost_inr"])
+        + float(current_cash["loom_maintenance_cost_inr"])
+    ) / max(float(current_cash["forecast_revenue_inr"]), 1.0)
+    estimated_revenue = recommended_mid * avg_unit_value
+    estimated_direct_cost = estimated_revenue * direct_cost_ratio
+    estimated_margin = estimated_revenue - estimated_direct_cost
+    profit_margin_pct = round((estimated_margin / estimated_revenue * 100), 1) if estimated_revenue > 0 else 0
+    raw_material_cost = estimated_revenue * (
+        float(current_cash["raw_material_cost_inr"]) / max(float(current_cash["forecast_revenue_inr"]), 1.0)
     )
-    finance_summary = _finance_summary(
-        profile=profile,
-        product_category=model_category,
-        quantity=recommended_mid,
-        fallback_unit_price=float(current_row["avg_order_value_inr"]),
-        display_product=display_product,
-        demand_band=demand_band,
+    wage_cost = estimated_revenue * (
+        float(current_cash["wage_cost_inr"]) / max(float(current_cash["forecast_revenue_inr"]), 1.0)
     )
 
     loan_needed, loan_amount, loan_text = _loan_advice(
-        direct_cost_inr=finance_summary["total_cost_inr"],
-        projected_cash_in_inr=float(current_cash["projected_cash_in_inr"]) / max(float(current_cash.get("active_weavers_est", 1)), 1.0),
-        projected_net_cashflow_inr=float(current_cash["projected_net_cashflow_inr"]) / max(float(current_cash.get("active_weavers_est", 1)), 1.0),
+        direct_cost_inr=estimated_direct_cost,
+        projected_cash_in_inr=float(current_cash["projected_cash_in_inr"]),
+        projected_net_cashflow_inr=float(current_cash["projected_net_cashflow_inr"]),
         credit_status=str(current_cash["credit_status"]),
     )
 
@@ -1181,6 +981,14 @@ def build_recommendation_package(profile: WeaverProfile) -> dict[str, Any]:
         festival_bonus > 0,
         peak_growth,
     )
+
+    demand_band = "Medium"
+    if total_multiplier >= 1.25:
+        demand_band = "High"
+    elif total_multiplier >= 1.15:
+        demand_band = "Medium-High"
+    elif total_multiplier <= 0.92:
+        demand_band = "Cautious"
 
     action_line = (
         "Produce carefully and keep delivery quality high."
@@ -1238,54 +1046,25 @@ def build_recommendation_package(profile: WeaverProfile) -> dict[str, Any]:
         option_mid = min(option_cap_high, max(option_cap_low, baseline_output))
         option_low = max(option_cap_low, int(round(option_mid - 1)))
         option_high = min(option_cap_high, max(option_low + 1, int(round(option_mid + 1))))
-        option_quantity = (option_low + option_high) / 2.0
-        option_finance = _finance_summary(
-            profile=profile,
-            product_category=str(option.product_category),
-            quantity=option_quantity,
-            fallback_unit_price=float(option.avg_order_value_inr),
-            display_product=option_label,
-            demand_band=demand_band,
-        )
+        option_rev = ((option_low + option_high) / 2.0) * float(option.avg_order_value_inr)
+        option_cost = option_rev * direct_cost_ratio
         weave_options.append(
             {
                 "product_key": matching_key,
-                "product_category": str(option.product_category),
                 "display_name": option_label,
                 "recommended_range": f"{option_low}–{option_high}",
-                "demand_band": demand_band,
-                "estimated_revenue_inr": option_finance["gross_revenue_inr"],
-                "estimated_raw_material_cost_inr": option_finance["raw_material_cost_inr"],
-                "estimated_total_cost_inr": option_finance["total_cost_inr"],
-                "estimated_profit_inr": option_finance["net_profit_inr"],
-                "profit_per_unit_inr": option_finance["profit_per_unit_inr"],
-                "cash_status": option_finance["cash_status"],
+                "estimated_revenue_inr": round(option_rev, 2),
+                "estimated_raw_material_cost_inr": round(
+                    option_rev
+                    * (
+                        float(current_cash["raw_material_cost_inr"])
+                        / max(float(current_cash["forecast_revenue_inr"]), 1.0)
+                    ),
+                    2,
+                ),
+                "estimated_profit_inr": round(option_rev - option_cost, 2),
             }
         )
-
-    weave_options = sorted(
-        weave_options,
-        key=lambda item: (item["estimated_profit_inr"], item["profit_per_unit_inr"]),
-        reverse=True,
-    )
-
-    # Build upcoming festival schedule from signals (next 12 weeks)
-    upcoming_festivals: list[dict] = []
-    signals_upcoming = signals[signals["week_start_date"] > TODAY].sort_values("week_start_date")
-    seen_festival_names: set = set()
-    for _frow in signals_upcoming.head(12).itertuples():
-        _fn = str(getattr(_frow, "festival_name", "") or "").strip()
-        if _fn and _fn not in seen_festival_names:
-            _fdays = max(0, (pd.Timestamp(_frow.week_start_date) - TODAY).days)
-            _fdate = pd.Timestamp(_frow.week_start_date)
-            upcoming_festivals.append({
-                "name": _fn.replace("_", " "),
-                "date": _fdate.strftime("%Y-%m-%d"),
-                "display_date": _fdate.strftime("%d %b %Y"),
-                "days_away": _fdays,
-                "proximity": float(getattr(_frow, "festival_proximity", 0.0)),
-            })
-            seen_festival_names.add(_fn)
 
     alerts = [
         {
@@ -1352,12 +1131,20 @@ def build_recommendation_package(profile: WeaverProfile) -> dict[str, Any]:
             "start": payment_start,
             "end": payment_end,
         },
-        "estimated_revenue_inr": finance_summary["gross_revenue_inr"],
-        "estimated_raw_material_cost_inr": finance_summary["raw_material_cost_inr"],
-        "estimated_wage_cost_inr": finance_summary["wage_cost_inr"],
-        "estimated_direct_cost_inr": finance_summary["total_cost_inr"],
-        "estimated_profit_inr": finance_summary["net_profit_inr"],
-        "finance_summary": finance_summary,
+        "estimated_revenue_inr": round(estimated_revenue, 2),
+        "estimated_raw_material_cost_inr": round(raw_material_cost, 2),
+        "estimated_wage_cost_inr": round(wage_cost, 2),
+        "estimated_direct_cost_inr": round(estimated_direct_cost, 2),
+        "estimated_profit_inr": round(estimated_margin, 2),
+        "finance_summary": {
+            "gross_revenue_inr": round(estimated_revenue, 0),
+            "direct_costs_inr": round(estimated_direct_cost, 0),
+            "net_profit_inr": round(estimated_margin, 0),
+            "profit_margin_pct": profit_margin_pct,
+            "cash_status": "healthy" if str(current_cash["credit_status"]) == "green" else "watch" if str(current_cash["credit_status"]) == "yellow" else "at risk",
+            "raw_material_cost_inr": round(raw_material_cost, 0),
+            "wage_cost_inr": round(wage_cost, 0),
+        },
         "market_pulse": {
             "cluster_trend_pct": round(cluster_trend_pct, 1),
             "state_trend_pct": round(state_trend_pct, 1),
@@ -1367,7 +1154,6 @@ def build_recommendation_package(profile: WeaverProfile) -> dict[str, Any]:
             ),
         },
         "alerts": alerts,
-        "upcoming_festivals": upcoming_festivals,
         "why_recommendation": why_bullets,
         "data_sources": data_sources,
         "action_line": action_line,
@@ -1497,59 +1283,6 @@ def weaver_weekly_plan(payload: RecommendationRequest) -> dict[str, Any]:
     }
 
 
-@app.post("/api/weaver/finance")
-def weaver_finance(payload: FinanceRequest) -> dict[str, Any]:
-    if payload.profile is not None:
-        profile = payload.profile
-        product_category = payload.product_category or PRODUCT_CATALOG[profile.primary_product_key]["model_category"]
-    else:
-        if not payload.cluster_id:
-            raise HTTPException(status_code=400, detail="cluster_id or profile is required")
-        profile = _default_profile(
-            cluster_id=payload.cluster_id,
-            product_category=payload.product_category,
-            name=payload.weaver_name,
-            language=payload.language,
-        )
-        product_category = payload.product_category or PRODUCT_CATALOG[profile.primary_product_key]["model_category"]
-
-    package = build_recommendation_package(profile)
-    summary = _finance_summary(
-        profile=profile,
-        product_category=product_category,
-        quantity=payload.quantity,
-        fallback_unit_price=package["finance_summary"]["unit_price_inr"],
-        unit_price_override=payload.unit_price_inr,
-        misc_cost_override=payload.misc_cost_inr,
-        display_product=package["display_product"],
-        demand_band=package["demand_band"],
-    )
-    capacity_low, capacity_high = _effective_capacity(
-        PRODUCT_CATALOG[profile.primary_product_key]["capacity_per_loom"],
-        profile.loom_count,
-        profile.weaver_count,
-    )
-    summary["capacity_warning"] = (
-        f"{payload.quantity:.0f} is above the usual weekly capacity of {capacity_high} for this setup. Confirm time and helpers before accepting it."
-        if payload.quantity > capacity_high
-        else ""
-    )
-    return {
-        "cluster_id": profile.cluster_id,
-        "product_category": product_category,
-        "quantity": payload.quantity,
-        "finance_summary": summary,
-    }
-
-
-@app.get("/api/assistant/status")
-def assistant_status() -> dict[str, Any]:
-    return {
-        "gemini_configured": bool(_env_value("GEMINI_API_KEY")),
-        "source": "GEMINI_API_KEY",
-    }
-
-
 @app.post("/api/assistant/respond")
 def assistant_respond(payload: AssistantRequest) -> dict[str, Any]:
     if payload.profile is not None:
@@ -1652,365 +1385,29 @@ def admin_forecast(
 
 @app.get("/api/admin/cashflow")
 def admin_cashflow(cluster_id: str = Query(...)) -> dict[str, Any]:
-    projection = _cashflow_rows_for_cluster(cluster_id)
-    history = load_cashflow()
-    history = history.loc[history["cluster_id"] == cluster_id].sort_values("week_start_date")
-    history_tail = history.tail(12)
-
-    # Determine active weavers for per-weaver normalisation.
-    # All cashflow figures in the dataset are CLUSTER totals (all weavers combined).
-    # We divide by active_weavers_est so a single-loom weaver sees their own share.
-    active_weavers = 1.0
-    if not projection.empty and "active_weavers_est" in projection.columns:
-        active_weavers = max(float(projection["active_weavers_est"].iloc[0]), 1.0)
-    elif not history_tail.empty and "active_weavers_est" in history_tail.columns:
-        active_weavers = max(float(history_tail["active_weavers_est"].median()), 1.0)
-
-    history_rows = [
-        {
-            "week_start_date": row.week_start_date.strftime("%Y-%m-%d"),
-            "cash_in_inr": round(float(row.cash_in_inr) / active_weavers, 2),
-            "net_cashflow_inr": round(float(row.net_cashflow_inr) / active_weavers, 2),
-            "projected_cash_in_inr": round(float(row.cash_in_inr) / active_weavers, 2),
-            "projected_net_cashflow_inr": round(float(row.net_cashflow_inr) / active_weavers, 2),
-        }
-        for row in history_tail.itertuples()
-    ]
-
-    projection_rows = [
-        {
-            "week_start_date": row.week_start_date.strftime("%Y-%m-%d"),
-            "forecast_revenue_inr": round(float(row.forecast_revenue_inr) / active_weavers, 2),
-            "projected_cash_in_inr": round(float(row.projected_cash_in_inr) / active_weavers, 2),
-            "projected_net_cashflow_inr": round(float(row.projected_net_cashflow_inr) / active_weavers, 2),
-            "credit_need_probability": float(row.credit_need_probability),
-            "credit_status": row.credit_status,
-        }
-        for row in projection.itertuples()
-    ]
-
-    income_change_pct = 0.0
-    if len(history_tail) >= 8:
-        recent = history_tail.tail(4)["cash_in_inr"].mean() / active_weavers
-        previous = history_tail.iloc[-8:-4]["cash_in_inr"].mean() / active_weavers
-        if abs(previous) > 1:
-            income_change_pct = ((recent - previous) / abs(previous)) * 100.0
-    elif len(projection_rows) >= 4:
-        first = sum(row["projected_cash_in_inr"] for row in projection_rows[:2]) / 2.0
-        second = sum(row["projected_cash_in_inr"] for row in projection_rows[2:4]) / 2.0
-        if abs(first) > 1:
-            income_change_pct = ((second - first) / abs(first)) * 100.0
-    elif len(projection_rows) >= 2:
-        first = projection_rows[0]["projected_cash_in_inr"]
-        last = projection_rows[-1]["projected_cash_in_inr"]
-        if abs(first) > 1:
-            income_change_pct = ((last - first) / abs(first)) * 100.0
-
-    current = projection.iloc[0] if not projection.empty else None
-    credit_status = str(current["credit_status"]) if current is not None else "green"
-    next_4_week_net = round(float(projection["projected_net_cashflow_inr"].sum()) / active_weavers, 2) if not projection.empty else 0.0
-    next_4_week_cash_in = round(float(projection["projected_cash_in_inr"].sum()) / active_weavers, 2) if not projection.empty else 0.0
-
-    if credit_status == "red":
-        cash_story = "Cash may run short in the next few weeks. Keep purchases careful and follow up on payments."
-    elif credit_status == "yellow":
-        cash_story = "Cash is workable but tight. Produce carefully and watch delayed payments."
-    elif income_change_pct >= 5:
-        cash_story = "Cash looks healthy and recent income is improving. Keep weaving as planned."
-    else:
-        cash_story = "Cash looks steady. Keep material ready and stick to this week's plan."
-
-    # Prefer charting history + upcoming projection without duplicating the join week.
-    chart_rows = history_rows[-8:] + projection_rows
-
+    rows = _cashflow_rows_for_cluster(cluster_id)
     return {
         "cluster_id": cluster_id,
-        "active_weavers": int(active_weavers),
-        "income_change_pct": round(income_change_pct, 1),
-        "credit_status": credit_status,
-        "next_4_week_net_inr": next_4_week_net,
-        "next_4_week_cash_in_inr": next_4_week_cash_in,
-        "cash_story": cash_story,
-        "rows": chart_rows,
-        "projection_rows": projection_rows,
-        "history_rows": history_rows,
-    }
-
-
-
-
-class BudgetPlanRequest(BaseModel):
-    cluster_id: str
-    product_category: str | None = None
-    budget_inr: float = Field(gt=0, le=5000000)
-    language: str = "en"
-    weaver_name: str = "Rameshbhai"
-
-
-@app.get("/api/weaver/history")
-def weaver_history(
-    cluster_id: str = Query(...),
-    product_category: str | None = Query(None),
-) -> dict[str, Any]:
-    """Past monthly earnings + cashflow history for income trend."""
-    cluster = _cluster_lookup().get(cluster_id)
-    if not cluster:
-        raise HTTPException(status_code=404, detail="Unknown cluster_id")
-
-    orders = artifact_bundle()["orders"]
-    cat = product_category or str(cluster["product_specialty"])
-    rows = orders[orders["cluster_id"] == cluster_id].copy()
-    if not rows.empty:
-        cat_rows = rows[rows["product_category"] == cat]
-        if not cat_rows.empty:
-            rows = cat_rows
-
-    # Determine active weavers to convert cluster-level order revenue → per-weaver
-    # Use the cashflow projection which has stable active_weavers_est
-    _cf_proj = artifact_bundle()["cashflow_projection"] if hasattr(artifact_bundle(), "__call__") else None
-    try:
-        _cf_proj = artifact_bundle()["cashflow_projection"]
-        _proj_rows = _cf_proj[_cf_proj["cluster_id"] == cluster_id]
-        active_weavers = max(float(_proj_rows["active_weavers_est"].iloc[0]) if not _proj_rows.empty else 1.0, 1.0)
-    except Exception:
-        cf_hist = load_cashflow()
-        cf_cluster = cf_hist[cf_hist["cluster_id"] == cluster_id]
-        if not cf_cluster.empty and "active_weavers_est" in cf_cluster.columns:
-            active_weavers = max(float(cf_cluster["active_weavers_est"].dropna().median()), 1.0)
-        else:
-            active_weavers = 1.0
-
-    rows = rows.copy()
-    rows["revenue"] = rows["quantity"] * rows["unit_price_inr"]
-    rows["month"] = pd.to_datetime(rows["order_date"]).dt.to_period("M")
-    monthly = (
-        rows.groupby("month")
-        .agg(
-            total_revenue=("revenue", "sum"),
-            total_units=("quantity", "sum"),
-            avg_unit_price=("unit_price_inr", "mean"),
-            order_count=("order_id", "count"),
-        )
-        .reset_index()
-    )
-    monthly["month_str"] = monthly["month"].astype(str)
-    # Divide cluster revenue by active weavers for realistic per-weaver figures
-    monthly["total_revenue"] = (monthly["total_revenue"] / active_weavers).round(2)
-    monthly["avg_unit_price"] = monthly["avg_unit_price"].round(2)
-    monthly_list = monthly.tail(18).to_dict(orient="records")
-    for r in monthly_list:
-        r.pop("month", None)
-
-    # Income trend: last 3 months vs previous 3
-    tail6 = monthly.tail(6)
-    if len(tail6) >= 4:
-        recent3 = float(tail6.tail(3)["total_revenue"].mean())
-        prev3 = float(tail6.head(3)["total_revenue"].mean())
-        income_trend_pct = round(((recent3 - prev3) / max(prev3, 1)) * 100, 1)
-    elif len(tail6) >= 2:
-        income_trend_pct = round(
-            (
-                (float(tail6.iloc[-1]["total_revenue"]) - float(tail6.iloc[0]["total_revenue"]))
-                / max(float(tail6.iloc[0]["total_revenue"]), 1)
-            )
-            * 100,
-            1,
-        )
-    else:
-        income_trend_pct = 0.0
-
-    # Cashflow history (per weaver, divide by active_weavers already computed above)
-    cf_hist = load_cashflow()
-    cf_rows = cf_hist[cf_hist["cluster_id"] == cluster_id].sort_values("week_start_date").tail(12)
-    # Use active_weavers_est from cf_rows if available, otherwise keep the value already computed
-    if not cf_rows.empty and "active_weavers_est" in cf_rows.columns:
-        _aw = cf_rows["active_weavers_est"].dropna().median()
-        if _aw and _aw > 1:
-            active_weavers = float(_aw)
-    cashflow_list = []
-    for r in cf_rows.itertuples():
-        cashflow_list.append(
+        "rows": [
             {
-                "week_start_date": pd.Timestamp(r.week_start_date).strftime("%Y-%m-%d"),
-                "cash_in_inr": round(float(r.cash_in_inr) / active_weavers, 2),
-                "net_cashflow_inr": round(float(r.net_cashflow_inr) / active_weavers, 2),
+                "week_start_date": row.week_start_date.strftime("%Y-%m-%d"),
+                "forecast_revenue_inr": float(row.forecast_revenue_inr),
+                "projected_cash_in_inr": float(row.projected_cash_in_inr),
+                "projected_net_cashflow_inr": float(row.projected_net_cashflow_inr),
+                "credit_need_probability": float(row.credit_need_probability),
+                "credit_status": row.credit_status,
             }
-        )
-
-    # Best product by revenue
-    if not rows.empty:
-        best_product = (
-            rows.groupby("product_category")["revenue"].sum().sort_values(ascending=False).index[0]
-        )
-    else:
-        best_product = cat
-
-    total_lifetime = float(rows["revenue"].sum()) / active_weavers if not rows.empty else 0.0
-    avg_per_order = float(rows["revenue"].mean()) / active_weavers if not rows.empty else 0.0
-
-    # ── Per-weaver income summary ────────────────────────────────────────────
-    # Current month revenue (most recent complete month)
-    current_month_revenue = 0.0
-    prev_month_revenue = 0.0
-    if len(monthly) >= 1:
-        current_month_revenue = float(monthly.iloc[-1]["total_revenue"])
-    if len(monthly) >= 2:
-        prev_month_revenue = float(monthly.iloc[-2]["total_revenue"])
-
-    # State-level benchmark: researched average monthly income for handloom
-    # weavers by state (source: The Hindu / NCAER 2024 study, ~₹7,000 national avg;
-    # premium-craft states like Gujarat/J&K earn more, lower-wage states earn less)
-    state = str(cluster.get("state", ""))
-    STATE_BENCHMARKS: dict[str, float] = {
-        "Gujarat": 9500.0,          # Patola / premium silk — higher unit price
-        "Jammu & Kashmir": 10500.0, # Pashmina / Kani shawls — highest unit price
-        "Tamil Nadu": 7500.0,       # Kanjivaram — premium but volume-driven
-        "Andhra Pradesh": 7000.0,
-        "Telangana": 7000.0,
-        "Karnataka": 7500.0,
-        "Kerala": 7200.0,
-        "West Bengal": 6500.0,      # Tant / Muslin — lower unit price, high volume
-        "Uttar Pradesh": 6000.0,
-        "Bihar": 5500.0,
-        "Odisha": 5800.0,
-        "Assam": 6200.0,
-        "Rajasthan": 7000.0,
-        "Madhya Pradesh": 6000.0,
-        "Maharashtra": 7000.0,
-    }
-    benchmark_monthly_inr = STATE_BENCHMARKS.get(state, 7000.0)
-
-    # Projected income WITH AI guidance = current + recommended plan uplift (~18%)
-    # The recommendation engine's impact_statement cites ~18% improvement.
-    # We apply a conservative 15% lift to the most recent 3-month average so the
-    # number is grounded in actual history, not an inflated constant.
-    recent3_avg = float(monthly.tail(3)["total_revenue"].mean()) if len(monthly) >= 3 else current_month_revenue
-    with_ai_monthly_inr = round(recent3_avg * 1.15, 2)
-
-    # Income improvement vs without-AI baseline (previous 3 months)
-    prev3_avg = float(monthly.iloc[-6:-3]["total_revenue"].mean()) if len(monthly) >= 6 else prev_month_revenue
-    without_ai_baseline = max(prev3_avg, 1.0)
-    income_improvement_pct = round(((with_ai_monthly_inr - without_ai_baseline) / without_ai_baseline) * 100, 1)
-
-    return {
-        "cluster_id": cluster_id,
-        "product_category": cat,
-        "active_weavers": int(active_weavers),
-        "income_trend_pct": income_trend_pct,
-        # ── single-weaver income card ──
-        "current_month_revenue_inr": round(current_month_revenue, 2),
-        "prev_month_revenue_inr": round(prev_month_revenue, 2),
-        "recent3_avg_monthly_inr": round(recent3_avg, 2),
-        "benchmark_monthly_inr": benchmark_monthly_inr,
-        "with_ai_monthly_inr": with_ai_monthly_inr,
-        "income_improvement_pct": income_improvement_pct,
-        "state": state,
-        "total_lifetime_revenue_inr": round(total_lifetime, 2),
-        "avg_order_revenue_inr": round(avg_per_order, 2),
-        "best_product": best_product,
-        "monthly_earnings": monthly_list,
-        "cashflow_history": cashflow_list,
+            for row in rows.itertuples()
+        ],
     }
 
-
-@app.post("/api/weaver/budget-plan")
-def weaver_budget_plan(payload: BudgetPlanRequest) -> dict[str, Any]:
-    """Given a budget, return how much raw material, units, and expected profit."""
-    cluster = _cluster_lookup().get(payload.cluster_id)
-    if not cluster:
-        raise HTTPException(status_code=404, detail="Unknown cluster_id")
-
-    product_category = payload.product_category or str(cluster["product_specialty"])
-    product_key = _product_key_for_category(product_category)
-    product_cfg = PRODUCT_CATALOG[product_key]
-
-    ratios = _cost_ratios(payload.cluster_id)
-    unit_price = _unit_price_for_product(payload.cluster_id, product_category)
-    if unit_price <= 0:
-        raise HTTPException(status_code=422, detail="No price data for this product/cluster.")
-
-    total_cost_ratio = ratios["raw"] + ratios["wage"] + ratios["maintenance"] + ratios["drag"] + 0.05
-    cost_per_unit = unit_price * total_cost_ratio
-    material_cost_per_unit = unit_price * ratios["raw"]
-    material_kg_per_unit = product_cfg["material_kg_per_unit"]
-    profit_per_unit = unit_price - cost_per_unit
-
-    cap_low, cap_high = _effective_capacity(product_cfg["capacity_per_loom"], 1, 1)
-
-    max_units_from_budget = int(payload.budget_inr / cost_per_unit) if cost_per_unit > 0 else 0
-    recommended_units = min(max_units_from_budget, cap_high)
-    recommended_units = max(recommended_units, 0)
-
-    material_kg_needed = recommended_units * material_kg_per_unit
-    material_cost_needed = recommended_units * material_cost_per_unit
-    total_cost = recommended_units * cost_per_unit
-    expected_revenue = recommended_units * unit_price
-    expected_profit = expected_revenue - total_cost
-    leftover_budget = payload.budget_inr - total_cost
-
-    signals = artifact_bundle()["signals_extended"].sort_values("week_start_date")
-    current_signal = signals[signals["week_start_date"] <= TODAY].iloc[-1] if not signals.empty else None
-    material_price_per_kg = float(current_signal["cotton_price_inr_per_kg"]) if current_signal is not None else 0.0
-
-    def scenario(n: int) -> dict:
-        rev = n * unit_price
-        cost = n * cost_per_unit
-        return {
-            "units": n,
-            "material_kg": round(n * material_kg_per_unit, 1),
-            "material_cost_inr": round(n * material_cost_per_unit, 2),
-            "total_cost_inr": round(cost, 2),
-            "expected_revenue_inr": round(rev, 2),
-            "expected_profit_inr": round(rev - cost, 2),
-            "profit_margin_pct": round((rev - cost) / rev * 100, 1) if rev > 0 else 0.0,
-            "budget_remaining_inr": round(payload.budget_inr - cost, 2),
-        }
-
-    conservative = max(0, int(recommended_units * 0.70))
-    stretch = min(int(payload.budget_inr / cost_per_unit) if cost_per_unit > 0 else 0, cap_high)
-
-    if recommended_units <= 0:
-        advice = (
-            f"Your budget of \u20b9{payload.budget_inr:,.0f} is below the cost of one "
-            f"{product_cfg['label'].lower()} (\u20b9{cost_per_unit:,.0f} per unit). "
-            "Consider a small loan or pooling with another weaver."
-        )
-    else:
-        advice = (
-            f"With \u20b9{payload.budget_inr:,.0f} you can produce {recommended_units} "
-            f"{product_cfg['label'].lower()} and earn about \u20b9{expected_profit:,.0f} after all costs. "
-            f"Buy {material_kg_needed:.1f} kg of raw material first "
-            f"(about \u20b9{material_cost_needed:,.0f})."
-        )
-
-    return {
-        "cluster_id": payload.cluster_id,
-        "product_category": product_category,
-        "product_label": product_cfg["label"],
-        "budget_inr": payload.budget_inr,
-        "unit_price_inr": round(unit_price, 2),
-        "cost_per_unit_inr": round(cost_per_unit, 2),
-        "profit_per_unit_inr": round(profit_per_unit, 2),
-        "material_price_per_kg_inr": round(material_price_per_kg, 2),
-        "material_kg_per_unit": material_kg_per_unit,
-        "recommended_units": recommended_units,
-        "material_kg_needed": round(material_kg_needed, 1),
-        "material_cost_inr": round(material_cost_needed, 2),
-        "total_cost_inr": round(total_cost, 2),
-        "expected_revenue_inr": round(expected_revenue, 2),
-        "expected_profit_inr": round(expected_profit, 2),
-        "budget_remaining_inr": round(leftover_budget, 2),
-        "advice": advice,
-        "scenarios": {
-            "conservative": scenario(conservative),
-            "recommended": scenario(recommended_units),
-            "stretch": scenario(stretch),
-        },
-    }
 
 @app.get("/api/admin/explainability")
 def admin_explainability(product_category: str = Query(...)) -> dict[str, Any]:
     return {"product_category": product_category, "feature_groups": _feature_importance(product_category)}
+
+# Import Hisab routes
+from . import hisab_api
 
 # --- Serve Frontend (for Docker single-container deployment) ---
 FRONTEND_DIST = ROOT_DIR / "frontend_dist"
@@ -2018,7 +1415,7 @@ if FRONTEND_DIST.exists():
     # Mount Vite static assets
     app.mount("/assets", StaticFiles(directory=FRONTEND_DIST / "assets"), name="assets")
     app.mount("/vite.svg", StaticFiles(directory=FRONTEND_DIST, html=False), name="vite_svg")
-    
+
     @app.get("/")
     @app.get("/{catchall:path}")
     def serve_react_app(catchall: str = ""):

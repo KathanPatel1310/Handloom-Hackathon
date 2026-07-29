@@ -1,0 +1,779 @@
+/* Hisab Styles - Mobile First Financial Tracking */
+
+.hisab-shell {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 16px;
+  min-height: calc(100vh - 80px);
+}
+
+.hisab-header {
+  margin-bottom: 24px;
+}
+
+.hisab-header h1 {
+  font-size: 28px;
+  color: #4f3b2a;
+  margin: 0 0 8px 0;
+  font-weight: 700;
+}
+
+.hisab-header p {
+  font-size: 14px;
+  color: #8b7355;
+  margin: 0;
+}
+
+/* Summary Card */
+.hisab-summary-card {
+  background: linear-gradient(135deg, #66744f 0%, #4f3b2a 100%);
+  color: white;
+  padding: 24px;
+  border-radius: 16px;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 12px rgba(79, 59, 42, 0.15);
+}
+
+.hisab-summary-card .eyebrow {
+  font-size: 12px;
+  opacity: 0.9;
+  margin: 0 0 8px 0;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.hisab-summary-card h2 {
+  font-size: 36px;
+  margin: 0 0 4px 0;
+  font-weight: 700;
+}
+
+.hisab-summary-card .label {
+  font-size: 14px;
+  opacity: 0.9;
+  margin: 0 0 20px 0;
+}
+
+.summary-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.summary-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.summary-item .icon {
+  font-size: 24px;
+  opacity: 0.9;
+}
+
+.summary-item .label {
+  font-size: 12px;
+  opacity: 0.8;
+  margin: 0 0 4px 0;
+}
+
+.summary-item .value {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0;
+}
+
+/* Action Buttons */
+.hisab-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.hisab-actions .action-button {
+  padding: 16px;
+  border: none;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.hisab-actions .action-button.money-in {
+  background: #66744f;
+  color: white;
+}
+
+.hisab-actions .action-button.money-in:active {
+  background: #556340;
+  transform: scale(0.98);
+}
+
+.hisab-actions .action-button.money-out {
+  background: #b2473f;
+  color: white;
+}
+
+.hisab-actions .action-button.money-out:active {
+  background: #9a3d35;
+  transform: scale(0.98);
+}
+
+.hisab-actions .action-button.speak {
+  background: #d6ab3e;
+  color: white;
+  grid-column: span 2;
+}
+
+.hisab-actions .action-button.speak:active {
+  background: #c49a2d;
+  transform: scale(0.98);
+}
+
+/* Quick Stats */
+.hisab-quick-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.quick-stat {
+  background: white;
+  border: 1px solid #e8dcc8;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 2px 8px rgba(79, 59, 42, 0.08);
+}
+
+.quick-stat .label {
+  font-size: 12px;
+  color: #8b7355;
+  margin: 0 0 8px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.quick-stat .value {
+  font-size: 20px;
+  font-weight: 700;
+  color: #4f3b2a;
+  margin: 0;
+}
+
+/* Alerts */
+.hisab-alerts {
+  margin-bottom: 20px;
+}
+
+.hisab-alerts h3 {
+  font-size: 16px;
+  color: #4f3b2a;
+  margin: 0 0 12px 0;
+  font-weight: 600;
+}
+
+.alert-card {
+  background: white;
+  border-left: 4px solid #b2473f;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 12px;
+  box-shadow: 0 2px 8px rgba(79, 59, 42, 0.08);
+}
+
+.alert-card.critical {
+  border-left-color: #b2473f;
+  background: #fef5f4;
+}
+
+.alert-card.important {
+  border-left-color: #d6ab3e;
+  background: #fffbeb;
+}
+
+.alert-card.informational {
+  border-left-color: #66744f;
+  background: #f5f7f4;
+}
+
+.alert-content {
+  margin-bottom: 12px;
+}
+
+.alert-message {
+  font-size: 15px;
+  font-weight: 600;
+  color: #4f3b2a;
+  margin: 0 0 4px 0;
+}
+
+.alert-subtitle {
+  font-size: 13px;
+  color: #8b7355;
+  margin: 0;
+}
+
+.alert-action {
+  background: none;
+  border: 1px solid #4f3b2a;
+  color: #4f3b2a;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.alert-action:active {
+  background: #4f3b2a;
+  color: white;
+}
+
+/* Insights */
+.hisab-insights {
+  margin-bottom: 20px;
+}
+
+.hisab-insights h3 {
+  font-size: 16px;
+  color: #4f3b2a;
+  margin: 0 0 12px 0;
+  font-weight: 600;
+}
+
+.insight-card {
+  background: white;
+  border: 1px solid #e8dcc8;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 12px;
+  box-shadow: 0 2px 8px rgba(79, 59, 42, 0.08);
+}
+
+.insight-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #66744f;
+  margin: 0 0 8px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.insight-message {
+  font-size: 15px;
+  color: #4f3b2a;
+  margin: 0 0 8px 0;
+  line-height: 1.5;
+}
+
+.insight-comparison {
+  font-size: 13px;
+  color: #8b7355;
+  margin: 0;
+}
+
+/* Recent Activity */
+.hisab-recent {
+  margin-bottom: 20px;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.section-header h3 {
+  font-size: 16px;
+  color: #4f3b2a;
+  margin: 0;
+  font-weight: 600;
+}
+
+.text-button {
+  background: none;
+  border: none;
+  color: #66744f;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 8px;
+}
+
+.text-button:active {
+  color: #4f3b2a;
+}
+
+/* Transaction List */
+.transaction-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.transaction-item {
+  background: white;
+  border: 1px solid #e8dcc8;
+  border-radius: 12px;
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 2px 8px rgba(79, 59, 42, 0.08);
+}
+
+.tx-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #f5f1e8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.tx-details {
+  flex: 1;
+  min-width: 0;
+}
+
+.tx-description {
+  font-size: 14px;
+  font-weight: 600;
+  color: #4f3b2a;
+  margin: 0 0 4px 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tx-meta {
+  font-size: 12px;
+  color: #8b7355;
+  margin: 0;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.tx-amount {
+  font-size: 16px;
+  font-weight: 700;
+  color: #4f3b2a;
+  flex-shrink: 0;
+}
+
+.tx-amount.positive {
+  color: #66744f;
+}
+
+.tx-amount.negative {
+  color: #b2473f;
+}
+
+.tx-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.tx-actions button {
+  background: none;
+  border: 1px solid #e8dcc8;
+  color: #8b7355;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.tx-actions button:active {
+  background: #4f3b2a;
+  color: white;
+  border-color: #4f3b2a;
+}
+
+/* Empty State */
+.empty-state {
+  text-align: center;
+  padding: 48px 24px;
+  background: white;
+  border: 2px dashed #e8dcc8;
+  border-radius: 12px;
+}
+
+.empty-state p {
+  font-size: 15px;
+  color: #8b7355;
+  margin: 0 0 8px 0;
+}
+
+.empty-state p:first-child {
+  font-size: 18px;
+  font-weight: 600;
+  color: #4f3b2a;
+  margin-bottom: 12px;
+}
+
+/* Modal */
+.modal-scrim {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(79, 59, 42, 0.6);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 1000;
+  padding: 0;
+}
+
+.modal-card {
+  background: white;
+  border-radius: 20px 20px 0 0;
+  padding: 24px;
+  width: 100%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.modal-card h2 {
+  font-size: 20px;
+  color: #4f3b2a;
+  margin: 0 0 20px 0;
+  font-weight: 700;
+}
+
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-group label {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: #4f3b2a;
+  margin: 0 0 8px 0;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #e8dcc8;
+  border-radius: 8px;
+  font-size: 15px;
+  color: #4f3b2a;
+  background: white;
+  font-family: inherit;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: #66744f;
+  box-shadow: 0 0 0 3px rgba(102, 116, 79, 0.1);
+}
+
+.form-group textarea {
+  min-height: 80px;
+  resize: vertical;
+}
+
+.form-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.primary-button {
+  background: #66744f;
+  color: white;
+  border: none;
+  padding: 14px;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.primary-button:active {
+  background: #556340;
+  transform: scale(0.98);
+}
+
+.secondary-button {
+  background: white;
+  color: #4f3b2a;
+  border: 1px solid #e8dcc8;
+  padding: 14px;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.secondary-button:active {
+  background: #f5f1e8;
+}
+
+/* Receivables & Payables */
+.hisab-receivables,
+.hisab-payables,
+.hisab-parties {
+  margin-bottom: 20px;
+}
+
+.hisab-receivables h3,
+.hisab-payables h3 {
+  font-size: 18px;
+  color: #4f3b2a;
+  margin: 0 0 16px 0;
+  font-weight: 600;
+}
+
+.receivable-list,
+.payable-list,
+.party-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.receivable-card,
+.payable-card,
+.party-card {
+  background: white;
+  border: 1px solid #e8dcc8;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 2px 8px rgba(79, 59, 42, 0.08);
+}
+
+.receivable-header,
+.payable-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.receivable-header h4,
+.payable-header h4 {
+  font-size: 16px;
+  color: #4f3b2a;
+  margin: 0;
+  font-weight: 600;
+}
+
+.status-badge {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.status-badge.pending {
+  background: #fffbeb;
+  color: #d6ab3e;
+}
+
+.status-badge.partial {
+  background: #fef5f4;
+  color: #b2473f;
+}
+
+.status-badge.paid {
+  background: #f5f7f4;
+  color: #66744f;
+}
+
+.status-badge.overdue {
+  background: #b2473f;
+  color: white;
+}
+
+.receivable-amounts,
+.payable-amounts {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.receivable-amounts .label,
+.payable-amounts .label {
+  font-size: 11px;
+  color: #8b7355;
+  margin: 0 0 4px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.receivable-amounts .value,
+.payable-amounts .value {
+  font-size: 16px;
+  font-weight: 700;
+  color: #4f3b2a;
+  margin: 0;
+}
+
+.receivable-amounts .value.highlight,
+.payable-amounts .value.highlight {
+  color: #b2473f;
+}
+
+.due-date {
+  font-size: 13px;
+  color: #8b7355;
+  margin: 0;
+  padding-top: 12px;
+  border-top: 1px solid #e8dcc8;
+}
+
+.party-card h4 {
+  font-size: 16px;
+  color: #4f3b2a;
+  margin: 0 0 4px 0;
+  font-weight: 600;
+}
+
+.party-type {
+  font-size: 13px;
+  color: #8b7355;
+  margin: 0 0 4px 0;
+  text-transform: capitalize;
+}
+
+.party-phone {
+  font-size: 14px;
+  color: #4f3b2a;
+  margin: 0;
+}
+
+/* Filters */
+.hisab-filters {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.hisab-filters input,
+.hisab-filters select {
+  padding: 12px;
+  border: 1px solid #e8dcc8;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #4f3b2a;
+  background: white;
+  font-family: inherit;
+}
+
+.hisab-filters input:focus,
+.hisab-filters select:focus {
+  outline: none;
+  border-color: #66744f;
+  box-shadow: 0 0 0 3px rgba(102, 116, 79, 0.1);
+}
+
+/* Error State */
+.hisab-error {
+  background: #fef5f4;
+  border: 1px solid #b2473f;
+  border-radius: 8px;
+  padding: 16px;
+  margin-top: 16px;
+  color: #b2473f;
+  font-size: 14px;
+}
+
+.error-card {
+  background: #fef5f4;
+  border: 1px solid #b2473f;
+}
+
+/* Responsive */
+@media (min-width: 768px) {
+  .hisab-shell {
+    padding: 24px;
+  }
+
+  .hisab-summary-card h2 {
+    font-size: 42px;
+  }
+
+  .modal-scrim {
+    align-items: center;
+  }
+
+  .modal-card {
+    border-radius: 20px;
+    max-height: 80vh;
+  }
+
+  .hisab-filters {
+    flex-direction: row;
+  }
+
+  .hisab-filters input {
+    flex: 1;
+  }
+
+  .hisab-filters select {
+    width: auto;
+    min-width: 150px;
+  }
+}
+
+/* Print Styles */
+@media print {
+  .hisab-actions,
+  .hisab-filters,
+  .tx-actions,
+  .modal-scrim {
+    display: none !important;
+  }
+
+  .hisab-shell {
+    padding: 0;
+  }
+
+  .transaction-item,
+  .receivable-card,
+  .payable-card {
+    break-inside: avoid;
+    box-shadow: none;
+    border: 1px solid #e8dcc8;
+  }
+}
