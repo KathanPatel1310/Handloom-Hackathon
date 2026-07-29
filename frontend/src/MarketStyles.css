@@ -1,0 +1,540 @@
+/* Market Intelligence Styles */
+
+.market-intelligence-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 0 40px;
+}
+
+/* Header */
+.market-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.market-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--color-ink-900, #1a1a1a);
+  margin: 0 0 4px;
+}
+
+.market-subtitle {
+  font-size: 0.85rem;
+  color: var(--color-ink-500, #6b6b6b);
+  margin: 0;
+}
+
+.market-refresh-btn {
+  background: var(--color-indigo-700, #3e5e82);
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.market-refresh-btn:hover {
+  background: var(--color-indigo-800, #2c4a6e);
+}
+
+/* AI Insights Banner */
+.market-insights-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  background: linear-gradient(135deg, #f0f4ff 0%, #e6f0ff 100%);
+  border: 1px solid #c7d7f0;
+  border-radius: 8px;
+  padding: 16px 20px;
+  margin-bottom: 24px;
+}
+
+.insights-icon {
+  font-size: 1.8rem;
+  flex-shrink: 0;
+}
+
+.insights-content {
+  flex: 1;
+}
+
+.insights-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-indigo-700, #3e5e82);
+  margin-bottom: 4px;
+}
+
+.insights-text {
+  font-size: 0.9rem;
+  color: var(--color-ink-700, #3a3a3a);
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* Main Grid */
+.market-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: 20px;
+}
+
+/* Card Base */
+.market-card {
+  background: white;
+  border: 1px solid var(--border-color, #e0e0e0);
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+.card-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--color-ink-900, #1a1a1a);
+  margin: 0 0 2px;
+}
+
+.card-subtitle {
+  font-size: 0.75rem;
+  color: var(--color-ink-400, #8a8a8a);
+}
+
+/* Weather Card */
+.weather-source-badge,
+.price-source-badge,
+.festival-badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 3px 8px;
+  border-radius: 3px;
+  white-space: nowrap;
+}
+
+.weather-source-badge {
+  background: #e3f2fd;
+  color: #1565c0;
+}
+
+.price-source-badge {
+  background: #fff3e0;
+  color: #e65100;
+}
+
+.festival-badge {
+  background: #fce4ec;
+  color: #c62828;
+}
+
+.weather-main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.weather-icon-large {
+  font-size: 3rem;
+  line-height: 1;
+}
+
+.weather-temp {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--color-ink-900, #1a1a1a);
+}
+
+.weather-details {
+  display: flex;
+  gap: 24px;
+  margin-bottom: 16px;
+}
+
+.weather-detail-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.detail-label {
+  font-size: 0.7rem;
+  color: var(--color-ink-400, #8a8a8a);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.detail-value {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-ink-700, #3a3a3a);
+}
+
+/* Dyeing Conditions */
+.dyeing-condition {
+  border-radius: 6px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+}
+
+.dyeing-condition.good {
+  background: #e8f5e9;
+  border-left: 3px solid #4caf50;
+}
+
+.dyeing-condition.caution {
+  background: #fff8e1;
+  border-left: 3px solid #ff9800;
+}
+
+.dyeing-condition.poor {
+  background: #ffebee;
+  border-left: 3px solid #f44336;
+}
+
+.dyeing-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+
+.dyeing-advice {
+  font-size: 0.75rem;
+  color: var(--color-ink-600, #5a5a5a);
+}
+
+.heat-advice {
+  font-size: 0.75rem;
+  color: var(--color-ink-600, #5a5a5a);
+  padding: 8px 0;
+}
+
+/* Weather Forecast */
+.weather-forecast {
+  margin-top: 16px;
+  border-top: 1px solid var(--border-color, #e0e0e0);
+  padding-top: 12px;
+}
+
+.forecast-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--color-ink-500, #6b6b6b);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  margin-bottom: 8px;
+}
+
+.forecast-days {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+}
+
+.forecast-day {
+  flex: 1;
+  min-width: 60px;
+  text-align: center;
+  padding: 8px 4px;
+  background: var(--color-cotton-50, #faf8f3);
+  border-radius: 4px;
+}
+
+.forecast-date {
+  font-size: 0.65rem;
+  color: var(--color-ink-400, #8a8a8a);
+  margin-bottom: 4px;
+}
+
+.forecast-temps {
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+  font-size: 0.75rem;
+}
+
+.temp-max {
+  font-weight: 700;
+  color: var(--color-ink-800, #2a2a2a);
+}
+
+.temp-min {
+  color: var(--color-ink-400, #8a8a8a);
+}
+
+.forecast-precip {
+  font-size: 0.65rem;
+  margin-top: 4px;
+}
+
+/* Prices Card */
+.prices-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.price-item {
+  padding: 12px;
+  background: var(--color-cotton-50, #faf8f3);
+  border-radius: 6px;
+}
+
+.price-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.price-commodity {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--color-ink-800, #2a2a2a);
+}
+
+.price-change {
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.price-up {
+  color: #16a34a;
+}
+
+.price-down {
+  color: #dc2626;
+}
+
+.price-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--color-ink-900, #1a1a1a);
+  margin-bottom: 4px;
+}
+
+.price-unit {
+  font-size: 0.8rem;
+  font-weight: 400;
+  color: var(--color-ink-500, #6b6b6b);
+}
+
+.price-range,
+.price-avg {
+  font-size: 0.75rem;
+  color: var(--color-ink-500, #6b6b6b);
+  margin-top: 2px;
+}
+
+.price-chart-container {
+  margin-top: 8px;
+}
+
+/* Festivals Card */
+.festivals-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.festival-item {
+  padding: 12px;
+  border-radius: 6px;
+  border-left: 3px solid;
+}
+
+.festival-item.urgency-critical {
+  background: #ffebee;
+  border-left-color: #f44336;
+}
+
+.festival-item.urgency-high {
+  background: #fff8e1;
+  border-left-color: #ff9800;
+}
+
+.festival-item.urgency-medium {
+  background: #e8f5e9;
+  border-left-color: #4caf50;
+}
+
+.festival-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.festival-name {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--color-ink-800, #2a2a2a);
+}
+
+.festival-days {
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 3px;
+}
+
+.festival-days.urgency-critical {
+  background: #f44336;
+  color: white;
+}
+
+.festival-days.urgency-high {
+  background: #ff9800;
+  color: white;
+}
+
+.festival-days.urgency-medium {
+  background: #4caf50;
+  color: white;
+}
+
+.festival-date {
+  font-size: 0.75rem;
+  color: var(--color-ink-500, #6b6b6b);
+  margin-bottom: 8px;
+}
+
+.festival-demand {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 3px;
+  display: inline-block;
+  margin-bottom: 8px;
+}
+
+.festival-demand.demand-high {
+  background: #ffebee;
+  color: #c62828;
+}
+
+.festival-demand.demand-medium {
+  background: #fff8e1;
+  color: #e65100;
+}
+
+.festival-demand.demand-low {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.festival-products,
+.festival-colors {
+  font-size: 0.75rem;
+  color: var(--color-ink-600, #5a5a5a);
+  margin-top: 4px;
+}
+
+.products-label,
+.colors-label {
+  font-weight: 600;
+  color: var(--color-ink-700, #3a3a3a);
+}
+
+.festival-action {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-indigo-700, #3e5e82);
+  margin-top: 8px;
+  padding: 6px 8px;
+  background: rgba(62, 94, 130, 0.08);
+  border-radius: 4px;
+}
+
+.festival-relevance {
+  font-size: 0.65rem;
+  color: var(--color-ink-400, #8a8a8a);
+  margin-top: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+/* Footer */
+.market-footer {
+  margin-top: 32px;
+  padding: 16px;
+  background: var(--color-cotton-50, #faf8f3);
+  border-radius: 6px;
+}
+
+.data-sources {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: center;
+}
+
+.source-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--color-ink-500, #6b6b6b);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.source-item {
+  font-size: 0.75rem;
+  color: var(--color-ink-600, #5a5a5a);
+}
+
+/* Loading & Error */
+.market-panel-loading {
+  padding: 40px;
+  text-align: center;
+  color: var(--color-ink-400, #8a8a8a);
+  font-size: 0.9rem;
+}
+
+.market-panel-error {
+  padding: 40px;
+  text-align: center;
+  color: var(--color-madder-600, #dc2626);
+  font-size: 0.9rem;
+  background: #ffebee;
+  border-radius: 6px;
+  margin: 20px 0;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .market-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .market-header {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .weather-details {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .forecast-days {
+    overflow-x: scroll;
+  }
+}

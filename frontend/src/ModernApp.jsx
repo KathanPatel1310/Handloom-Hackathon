@@ -15,7 +15,9 @@ import {
   Area,
 } from "recharts";
 import HisabApp from "./HisabApp";
+import MarketIntelligence from "./MarketIntelligence";
 import "./HisabStyles.css";
+import "./MarketStyles.css";
 import "./ModernStyles.css";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "http://127.0.0.1:8000";
@@ -64,6 +66,7 @@ const MODULES = [
   { id: "orders",     label: "Order History",      group: "MAIN" },
   { id: "cluster",    label: "Cluster Analytics",  group: "MAIN" },
   { id: "assistant",  label: "AI Assistant",       group: "MAIN" },
+  { id: "market",     label: "Market Intelligence", group: "MAIN" },
   { id: "hisab",      label: "My Hisab",           group: "MAIN" },
   { id: "profile",    label: "Profile & Settings", group: "SETTINGS" },
 ];
@@ -177,6 +180,7 @@ function NavIcon({ id }) {
     case "cluster":     return <svg {...s} stroke="currentColor" strokeWidth="1.5"><circle cx="8" cy="8" r="1.5" fill="currentColor" /><circle cx="3" cy="4" r="1.5" fill="currentColor" /><circle cx="13" cy="12" r="1.5" fill="currentColor" /><line x1="4.5" y1="5" x2="6.5" y2="6.5" /><line x1="9.5" y1="9.5" x2="11.5" y2="11" /></svg>;
     case "assistant":   return <svg {...s} stroke="currentColor" strokeWidth="1.5"><path d="M2 5.5v3c0 1 .6 1.8 1.4 2.1l4.1 1.7c.3.1.7.1 1 0l4.1-1.7c.8-.3 1.4-1.1 1.4-2.1v-3M8 2l-6 3.5M8 2l6 3.5M8 2v7.5" /></svg>;
     case "hisab":       return <svg {...s} stroke="currentColor" strokeWidth="1.5"><rect x="2" y="4" width="12" height="10" rx="1"/><line x1="5" y1="7" x2="11" y2="7"/><line x1="5" y1="10" x2="9" y2="10"/></svg>;
+    case "market":      return <svg {...s} stroke="currentColor" strokeWidth="1.5"><path d="M2 5h12M4 5v9h8V5M6 8h4M6 11h4"/><circle cx="8" cy="2.5" r="1"/></svg>;
     case "profile":     return <svg {...s} stroke="currentColor" strokeWidth="1.5"><circle cx="8" cy="5" r="3"/><path d="M2 14c0-3.3 2.7-6 6-6s6 2.7 6 6"/></svg>;
     default:            return null;
   }
@@ -1634,6 +1638,7 @@ function DashboardLayout({ profile, setProfile, onLogout }) {
       case "orders":    return <OrdersPage clusterId={profile.clusterId} clusterName={profile.clusterName} />;
       case "cluster":   return <ClusterAnalyticsPage clusterId={profile.clusterId} />;
       case "assistant": return <AssistantPage profile={profile} />;
+      case "market":    return <MarketIntelligence profile={profile} />;
       case "hisab":     return <HisabApp profile={profile} cluster={{ cluster_id: profile.clusterId, cluster_name: profile.clusterName }} />;
       case "profile":   return <ProfilePage profile={profile} setProfile={setProfile} onLogout={onLogout} />;
       default:          return <OverviewPage clusterId={profile.clusterId} />;

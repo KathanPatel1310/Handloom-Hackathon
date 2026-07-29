@@ -1408,6 +1408,7 @@ def admin_explainability(product_category: str = Query(...)) -> dict[str, Any]:
 
 # Import Hisab routes
 from . import hisab_api
+from . import market_api
 
 # --- Serve Frontend (for Docker single-container deployment) ---
 FRONTEND_DIST = ROOT_DIR / "frontend_dist"
